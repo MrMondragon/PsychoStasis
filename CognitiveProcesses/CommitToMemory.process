@@ -1,0 +1,13 @@
+{
+  "name":"CommitToMemory",
+  "common":true,
+  "shard":"",
+  "prompt":"",
+  "contexts": [
+    "afterMessageReceived"
+  ],
+  "grammar":"",
+  "decisoryStatement":"",
+  "shouldRun":true,
+  "subProcesses":[]
+}
