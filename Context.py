@@ -63,11 +63,8 @@ class Context(object):
     
   def get_token_size(self, message):
     if(self.model != None):
-      print("Tokenizing with local model")
-      print(self.model.model_name)
       return len(self.model.encode(message))
     else:
-      print("Tokenizing with global model")
       return len(globalNexus.CortexModel.encode(message))
   
   def get_token_count(self, prompt):

@@ -15,6 +15,7 @@ class Proxy:
   def __init__(self, name, **kwargs) -> None:
     self.name = name;
     self.context = Context()
+    self.innerThoughts = Context()
     
     # Get the current working directory
     cwd = os.getcwd()
@@ -47,6 +48,8 @@ class Proxy:
     self.collective = None    
     self.authoritative = False
     self.context.systemMessage = self.GenerateSystem()
+    self.innerPersona =  "" if "inner_persona" not in kwargs else kwargs["inner_persona"];
+    self.innerThoughts.systemMessage = self.GenerateSystem(innerThoughts = True)
 
   @classmethod
   def get_proxy_list(cls):    
@@ -56,19 +59,23 @@ class Proxy:
     proxy_list = [f.replace('.proxy', '') for f in proxy_list]
     return proxy_list
   
-  def GenerateAnswer(self, prompt, shard=None, contextCallback = None):
-
-      oldModel = self.context.model
-      if(shard!='' and shard!=None):
-        self.context.model = globalNexus.ShardModels[shard]
+  def GenerateAnswer(self, prompt, shard=None, contextCallback = None, innerThoughts = False):
+      if(innerThoughts):
+        context = self.innerThoughts
       else:
-        self.context.model = globalNexus.CortexModel        
+        context = self.context
+      
+      oldModel = context.model
+      if(shard!='' and shard!=None):
+        context.model = globalNexus.ShardModels[shard]
+      else:
+        context.model = globalNexus.CortexModel        
 
-      self.context.model.activate()
-      self.context.window_size = globalNexus.CortexModel.params["n_ctx"] - globalNexus.CortexModel.params["max_tokens"]      
-      self.context.proxy = self
+      context.model.activate()
+      context.window_size = globalNexus.CortexModel.params["n_ctx"] - globalNexus.CortexModel.params["max_tokens"]      
+      context.proxy = self
       cognitiveSystem.RunProcesses(proxy=self, context="beforeGenerateAnswer")    
-      localContext = self.context.get_relevant_context(prompt=prompt, contextCallback = contextCallback)
+      localContext = context.get_relevant_context(prompt=prompt, contextCallback = contextCallback)
       
       if(self.LoRa):
         self.LoadLora();      
@@ -81,27 +88,30 @@ class Proxy:
       if(self.LoRa):
         self.UnloadLora();
       
-      self.context.contextual_info = None
-      self.context.append_message_object(role=self.name, message=answer)
+      context.contextual_info = None
+      context.append_message_object(role=self.name, message=answer)
       cognitiveSystem.RunProcesses(proxy=self, context="afterGenerateAnswer")
       
-      if(not self.context.last_answer):
-        self.context.remove_last_pair()
-        if(self.context.verbose):
+      if(not context.last_answer):
+        context.remove_last_pair()
+        if(context.verbose):
           print(f"Removing last answer and trying again. Reason: empty answer")
         self.GenerateAnswer(prompt=prompt, shard=shard, contextCallback = contextCallback)
       
-      self.context.model = oldModel
-      return self.context.last_answer
+      context.model = oldModel
+      return context.last_answer
   
-  def GenerateSystem(self):
+  def GenerateSystem(self, innerThoughts= False):
     sysMessage = []
     sysMessage.append(f"You are {self.name}, {self.primer}")
-    sysMessage.extend(self.coreStatements)
-    if(self.extended_core != ""):
-      sysMessage.append(self.extended_core)
+    if(innerThoughts):
+      sysMessage.append(self.innerPersona)
+    else:
+      sysMessage.extend(self.coreStatements)
+      if(self.extended_core != ""):
+        sysMessage.append(self.extended_core)
     sysMessage = "\n".join(sysMessage)
-    
+      
     if("{user_name}" in sysMessage):
       sysMessage = sysMessage.replace("{user_name}", self.context.userName)
     if("{user}" in sysMessage):
@@ -150,8 +160,6 @@ class Proxy:
       sender = "user"    
     self.enterSubContext()
     
-    self.context.systemMessage = self.GenerateSystem()
-    
     if(lastAnswer["content"] != lastMessage):
       if(sender == "user"):
         self.context.append_message(message=lastAnswer["context"], role=lastAnswer["role"])
@@ -185,27 +193,41 @@ class Proxy:
   
   def UnloadLora(self):
     pass
-  def enterSubContext(self, deepCopy=False):
+  def enterSubContext(self, deepCopy=False, copySystem=False, copyLast=False, innerThoughts=False, resetCortex=False):
     newContext = Context()
+    if(resetCortex):globalNexus.CortexModel.reset()
+    context = self.innerThoughts if innerThoughts else self.context
     print(f"Entering context {newContext.contextID} from context {self.context.contextID}")
-    newContext.userName = self.context.userName  
-    newContext.parentContext = self.context
-    newContext.proxy = self.context.proxy
-    newContext.collective = self.context.collective
-    newContext.verbose = self.context.verbose
+    newContext.userName = context.userName  
+    newContext.parentContext = context
+    newContext.proxy = context.proxy
+    newContext.collective = context.collective
+    newContext.verbose = context.verbose
     
     if(deepCopy):
-      newContext.message_history = copy.deepcopy(self.context.message_history)
-      newContext.last_message = self.context.last_message
-      newContext.last_answer = self.context.last_answer
-      newContext.systemMessage = self.context.systemMessage
+      newContext.message_history = copy.deepcopy(context.message_history)
+    if(copyLast):
+      newContext.contextual_info = copy.deepcopy(context.contextual_info)   
+      newContext.last_message = context.last_message
+      newContext.last_answer = context.last_answer
+    if(copySystem):
+      newContext.systemMessage = context.systemMessage
       
-    self.context = newContext
+    context = newContext
     
-  def exitSubContext(self):
-    if(self.context.parentContext):
+    if(innerThoughts):
+      self.innerThoughts = newContext
+    else:
+      self.context = newContext
+    
+    return newContext
+    
+  def exitSubContext(self, innerThoughts=False):
+    context = self.innerThoughts if innerThoughts else self.context
+    if(context.parentContext):
       print(f"exiting context {self.context.contextID} to context {self.context.parentContext.contextID}")    
-      self.context = self.context.parentContext
+      context = context.parentContext
+      return context
   
   def deactivateCortex(self):
     globalNexus.CortexModel.deactivate()

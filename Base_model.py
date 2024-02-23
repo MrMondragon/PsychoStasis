@@ -93,5 +93,7 @@ class Base_model:
     def generate(self, localContext, callback=None):
         pass
         
+    def reset():
+        pass
         
     

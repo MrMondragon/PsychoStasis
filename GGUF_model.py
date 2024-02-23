@@ -219,4 +219,5 @@ class GGUF_model(Base_model):
                 yield reply  
         self.streaimng = False
         
-
+    def reset(self):
+        self.model.cache = None

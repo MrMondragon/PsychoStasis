@@ -18,8 +18,13 @@ class Memory(object):
     self.client = PersistentClient(self.path)
     self.episodicMemory = self.client.get_or_create_collection("episodicMemory",
                                                                embedding_function=NexusEmbeddingFunction())
+    
     self.factualMemory = self.client.get_or_create_collection("factualMemory",
                                                                embedding_function=NexusEmbeddingFunction())
+    
+    self.innerMemory = self.client.get_or_create_collection("innerMemory",
+                                                             embedding_function=NexusEmbeddingFunction())
+    
     self.consolidatedMemory = self.client.get_or_create_collection("consolidatedMemory",
                                                                    embedding_function=NexusEmbeddingFunction())
     #raw text
@@ -31,6 +36,7 @@ class Memory(object):
     #summarization level 2
     self.documentalMemoryLevel2 = self.client.get_or_create_collection("documentalMemoryLevel2",
                                                                        embedding_function=NexusEmbeddingFunction())
+    
     self.booleanDiscriminationMemory = self.client.get_or_create_collection("booleanDiscriminationMemory",
                                                                            embedding_function=NexusEmbeddingFunction())
     if(self.booleanDiscriminationMemory.count() == 0):
@@ -45,12 +51,11 @@ class Memory(object):
       ids = [f"id_{i}" for i in range(0, len(words))]
       self.closestWordMemory.add(documents=words, ids=ids)
       
-  def CreateEpisodicMemory(self, input, conversationId, entryId, role, proxy, entities, 
-                           sentiment, tags):
+  def CreateEpisodicMemory(self, input, conversationId, role, proxy, entities, 
+                           sentiment, tags, innerThoughts):
     timestamp = int(datetime.datetime.now())
-    documents=[input]
-    metadata=[
-        {
+    documents=input
+    metadata={
             "conversationId": conversationId,
             "role": role,
             "proxy": proxy,
@@ -58,10 +63,10 @@ class Memory(object):
             "sentiment": sentiment,
             "tags": tags,
             "timestamp": timestamp,
-            "id": entryId
+            "innerThoughts": innerThoughts            
         }
-    ]
-    return documents, metadata    
+    
+    return documents, metadata,     
   
   def CreateFactualMemory(self, input, conversationId, entryId, role, proxy, sentiment, tags):
     timestamp = int(datetime.datetime.now())
@@ -81,10 +86,10 @@ class Memory(object):
     return documents, metadata    
 
   #I firmly refuse to use metadatas as a plural for metadata!!!!
-  def CommitToMemory(self, memoryLevel, documents, metadata):
+  def CommitToMemory(self, memoryLevel, documents, metadata, ids):
     memoryLevel = self.client.get_or_create_collection(memoryLevel,
                                           embedding_function=NexusEmbeddingFunction())
-    memoryLevel.add(documents=documents, metadatas=metadata)
+    memoryLevel.upsert(documents=documents, metadatas=metadata, ids=ids)
     
   def UpdateMemoryMetadata(self, memoryLevel, query, metadata, maxRecords):
     memoryLevel = self.client.get_or_create_collection(memoryLevel,

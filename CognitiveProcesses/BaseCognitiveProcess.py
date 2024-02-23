@@ -2,38 +2,43 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path("..")))
 from Nexus import globalNexus
-from CognitiveSystem import cognitiveSystem
 from Memory import globalMemory
+from Proxy import Proxy
 
 class BaseCognitiveProcess(object):
   def __init__(self, procConfig) -> None:
     self.DecisoryStatement = "" if "DecisoryStatement" not in procConfig else procConfig["decisoryStatement"] 
     self.Shard = None if "Shard" not in procConfig else procConfig["shard"]
-    self.Grammar = None if "Grammar" not in procConfig else procConfig["grammar"]
-    self.SubProcesses = [] if "SubProcesses" not in procConfig else procConfig["subProcesses"]
-    self.Prompt = "" if "Prompt" not in procConfig else procConfig["prompt"]
+    if(self.Shard):
+      globalNexus.load_model(self.Shard)
+    self.Grammar = None
+    self.SubProcesses = [] if "subProcesses" not in procConfig else procConfig["subProcesses"]
+    self.Frequency = "" if "frequency" not in procConfig else procConfig["frequency"]
     self.Name = procConfig["name"]
     self.contextCallback = self.ExpandContext
     self.shouldRun = True if "shouldRun" not in procConfig else procConfig["shouldRun"]
-    self.proxy = None
+    self.proxy: Proxy = None
   
   def Run(self, proxy):
     self.proxy = proxy
     if(self.ShouldRun(proxy)):
       oldGrammar = ""
       if(self.Grammar):
-        oldGrammar = globalNexus.CortexModel.params['grammar_string']
-      globalNexus.CortexModel.params['grammar_string'] = self.Grammar
-      self._internalRun(proxy)  
+        if(not self.Shard):
+          oldGrammar = globalNexus.CortexModel.params['grammar_string']
+          globalNexus.CortexModel.params['grammar_string'] = self.Grammar
+        else:
+          oldGrammar = globalNexus.ShardModels[self.Shard].params['grammar_string']
+          globalNexus.ShardModels[self.Shard].params['grammar_string'] = self.Grammar
+          
+      self._internalRun()  
       self.ConditionalRunSubProcesses()  
-      globalNexus.CortexModel.params['grammar_string'] = oldGrammar
+      if(not self.Shard):
+        globalNexus.CortexModel.params['grammar_string'] = oldGrammar
+      else:
+        globalNexus.ShardModels[self.Shard].params['grammar_string'] = oldGrammar
     self.proxy = None
       
-  def GenerateAnswer(self, proxy):
-    if(self.Shard):
-      return proxy.GenerateAnswer(prompt= self.Prompt, shard=self.Shard, contextCallback = self.contextCallback)
-    else:
-      return proxy.GenerateAnswer(prompt= self.Prompt, contextCallback = self.contextCallback)
   
   def ExpandContext():
     pass  
@@ -45,20 +50,18 @@ class BaseCognitiveProcess(object):
         decisoryStatement += f"Name: {subProcess.Name} - {subProcess.DecisoryStatement}\n"
       decisoryStatement += "Respond with the Name of the option if any applies or respond with none if no option applies\n"
       
-      oldPrompt = self.Prompt
-      self.Prompt = decisoryStatement
+      prompt = decisoryStatement
       
-      decision = self.GenerateAnswer(proxy=self.Proxy)
+      decision = self.proxy.GenerateAnswer(prompt= prompt, shard=self.Shard, contextCallback = self.contextCallback, innerThoughts = False)
       if(decision.lower() != "none"):
         choice = self.ChooseSubProcess(decision)
         if(not choice):
-          self.Prompt += "You have chosen an invalid option. Please try again.\n"
-          decision = self.GenerateAnswer(proxy=self.Proxy)
+          prompt += "You have chosen an invalid option. Please try again.\n"
+          decision = self.proxy.GenerateAnswer(prompt= prompt, shard=self.Shard, contextCallback = self.contextCallback, innerThoughts = False)
           choice = self.ChooseSubProcess(decision)
         if(choice):
-          choice.Run(proxy=self.Proxy)
+          choice.Run()
           
-      self.Prompt = oldPrompt
 
   def ChooseSubProcess(self, decision):
       choice = next((subProcess for subProcess in self.SubProcesses 
@@ -68,7 +71,7 @@ class BaseCognitiveProcess(object):
         print(f"SubCognitiveProcess {choice.Name} selected")      
       return choice
   
-  def ShouldRun(self, proxy):
+  def ShouldRun(self):
     if self.shouldRun:
       return
     else:
@@ -77,12 +80,33 @@ class BaseCognitiveProcess(object):
       result = True    
       if(self.DecisoryStatement):
         prompt = f"You now have the option to {self.DecisoryStatement}. Is it applicable?  Answer with yes or no only."
-        decision = self.GenerateAnswer(prompt=prompt, proxy=proxy)
+        decision = self.proxy.GenerateAnswer(prompt= prompt, shard=self.Shard, contextCallback = self.contextCallback, innerThoughts = False)
         result = globalMemory.sentenceToBoolean(decision)
     
       if(self.proxy.context.verbose):
         print(f"Result = {result}")
     
-  def _internalRun(self,proxy):
+  def _internalRun(self):
     if(self.proxy.context.verbose):
       print(f"Internal execution for {self.Name}")
+      
+  def getLocalContext(self, innerThoughts = False):
+    context = self.proxy.context if not innerThoughts else self.proxy.innerThoughts
+    if(len(context.message_history)%self.frequency == 0):
+      freq = self.frequency * -1
+      localContext = context.message_history[freq:]
+      return localContext
+    else:
+      return []
+    
+  def judgeMessages(self, localContext, prompt, genSys=True, deepCopy = False):
+    self.Grammar='''root ::= choice
+                    choice ::= "Yes"|"No"'''
+    self.proxy.enterSubContext(deepCopy=deepCopy)
+    if(genSys):
+      self.proxy.context.systemMessage = self.proxy.GenerateSystem()
+    self.proxy.context.message_history.extend(localContext)
+    answer = self.proxy.GenerateAnswer(shard=self.Shard,prompt=prompt)
+    self.proxy.exitSubContext()
+    boolAnswer = globalMemory.sentenceToBoolean(answer)
+    return boolAnswer

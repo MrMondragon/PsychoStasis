@@ -1,4 +1,5 @@
 import glob
+import importlib
 import json
 import os
 
@@ -15,9 +16,10 @@ class CognitiveSystem(object):
     
 
   def RunProcesses(self, proxy, context):
-    return
     processes = list(filter(lambda proc: (context in proc["contexts"])
-                            and (proc["name"] in proxy.cognitiveProcs), self.processConfigs))
+                            and ((proc["name"] in proxy.cognitiveProcs) 
+                            or (proc["name"] in self.commonProcesses)), self.processConfigs.values()))
+                            
     if processes:
       for proc in processes:
         process =self.InstantiateProcess(proc["name"])
@@ -35,18 +37,17 @@ class CognitiveSystem(object):
           procName = data["name"]          
           self.processConfigs[procName] = data
           if(data["common"]):
-            self.commonProcesses.append(procName)
+            self.commonProcesses.append(procName)          
       
-  def InstantiateProcess(self, proc):#proc = name of the process
-    if(not proc in self.processes):
-      procCfg = self.processConfigs[proc]
-      procClassName = proc
-      if(not kwargs):
-        kwargs = {}
-      procObject = globals()[procClassName](name=procCfg, kwargs=kwargs)
-      self.processes[proc] = procObject
+  def InstantiateProcess(self, procName):
+    if(not procName in self.processes):
+      procCfg = self.processConfigs[procName]      
+      module = importlib.import_module(procName)
+      cls = getattr(module, procName)
+      procObject = cls(name=procCfg, kwargs=self.processConfigs[procName])
+      self.processes[procName] = procObject
     else:
-      procObject = self.processes[proc]
+      procObject = self.processes[procName]
     return procObject
   
   def RegisterCommonProcesses(self, proxy):
