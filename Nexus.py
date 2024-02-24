@@ -14,6 +14,7 @@ from Shard_model import Shard_model
 from Embeddings_model import Embeddings_model
 from Summarization_model import Summarization_model
 from NER_model import NER_model
+from Sentiment_model import Sentiment_model
 import nvidia_smi
 
 model_path = 'models/' 
@@ -26,6 +27,7 @@ class Nexus(object):
         self.load_model("Embeddings.Embeddings")
         self.load_model("Summarizer.Summarizer")
         self.load_model("NER.NER")
+        self.load_model("Sentiment.Sentiment")
         
     model_mapping = {
         'Causal' : CausalLM,
@@ -33,7 +35,8 @@ class Nexus(object):
         'Shard' : Shard_model,
         'Embeddings' : Embeddings_model,
         'Summarizer' : Summarization_model,
-        'NER' : NER_model        
+        'NER' : NER_model,
+        'Sentiment': Sentiment_model
     }
 
     @classmethod
@@ -157,6 +160,12 @@ class Nexus(object):
         self.activate_model("NER.NER")
         result = self.ShardModels["NER.NER"].generate(prompt)
         self.deactivate_model("NER.NER")
+        return result
+    
+    def getSentiment(self, prompt):
+        self.activate_model("Sentiment.Sentiment")
+        result = self.ShardModels["Sentiment.Sentiment"].generate(prompt)
+        self.deactivate_model("Sentiment.Sentiment")
         return result
     
 

@@ -17,10 +17,13 @@ class CommitToMemory(BaseCognitiveProcess):
   def commitToEpisodicMemory(self, innerThoughts):
     localContext = self.getLocalContext(innerThoughts=innerThoughts)
     if(localContext != []):
-      entities = globalNexus.getNER(str.join(iterable=localContext, sep="\n"))
+      texContext = "\n".join([message["content"] for message in localContext])
+      entities = globalNexus.getNER(texContext)
+      sentiment = globalNexus.getSentiment(texContext)
       documents = []
       ids = []
       metadata = []
+      
       for message in localContext:
         if(message["role"] == "assistant"):
           role = self.proxy.name
@@ -31,7 +34,7 @@ class CommitToMemory(BaseCognitiveProcess):
                                                            role=role,
                                                            proxy = self.proxy.name,
                                                            entities=entities,
-                                                           sentiment="", 
+                                                           sentiment=sentiment, 
                                                            tags=[])
         documents.append(document)
         ids.append(message["id"])
