@@ -99,14 +99,14 @@ class BaseCognitiveProcess(object):
     else:
       return []
     
-  def judgeMessages(self, localContext, prompt, genSys=True, deepCopy = False):
+  def judgeMessages(self, localContext, prompt, copySystem=True, deepCopy = False, 
+                    resetCortex=True, start=None, end=None):
     self.Grammar='''root ::= choice
                     choice ::= "Yes"|"No"'''
-    self.proxy.enterSubContext(deepCopy=deepCopy)
-    if(genSys):
-      self.proxy.context.systemMessage = self.proxy.GenerateSystem()
+    self.proxy.enterSubContext(deepCopy=deepCopy, resetCortex=resetCortex, 
+                               copySystem=copySystem, start=start, end=end)
     self.proxy.context.message_history.extend(localContext)
-    answer = self.proxy.GenerateAnswer(shard=self.Shard,prompt=prompt)
+    answer = self.proxy.GenerateAnswer(shard=self.Shard, prompt=prompt)
     self.proxy.exitSubContext()
     boolAnswer = globalMemory.sentenceToBoolean(answer)
     return boolAnswer

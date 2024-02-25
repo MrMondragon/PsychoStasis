@@ -53,17 +53,13 @@ class Base_model:
             self.load()
             self.active = True
             print(f"model {self.model_name} activated")
-        else:
-            print(f"model {self.model_name} already activated")
         
     def deactivate(self):
         if(self.active):
             self.unload()
             self.active = False
             print(f"model {self.model_name} deactivated")
-        else:
-            print(f"model {self.model_name} already deactivated")
-    
+        
     def unload(self):
         del self.model
         self.model = None

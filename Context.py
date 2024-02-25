@@ -88,7 +88,7 @@ class Context(object):
     else:
       return {"role":message["role"], "content":message["content"]}
   
-  def get_relevant_context(self, prompt, contextCallback=None):
+  def get_relevant_context(self, prompt, contextCallback=None, start = None, end = None):
     relevantContext = []
     if(self.systemMessage):
       relevantContext.append({"role":"system", "content":self.systemMessage})
@@ -105,10 +105,18 @@ class Context(object):
       relevantContext.append(self.convert_to_chat_format(promptMessage, includeTokens=False))
     if(self.verbose):
       print(f"Context: {json.dumps(relevantContext, indent=2)}")
+      
+    if(start and end):
+      relevantContext = relevantContext[start:end]
+    elif(start):
+      relevantContext = relevantContext[start:]
+    elif(end):
+      relevantContext = relevantContext[:end]
+      
     return relevantContext    
   
-  def get_relevant_context_as_text(self, prompt):
-    context = self.get_relevant_context(prompt=prompt)
+  def get_relevant_context_as_text(self, prompt, start = None, end = None):
+    context = self.get_relevant_context(prompt=prompt, start=start, end=end)
     result = ""
     for message in context:
       result += message["role"] + ": " + message["content"]+"\n"

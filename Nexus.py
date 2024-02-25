@@ -27,7 +27,8 @@ class Nexus(object):
         self.load_model("Embeddings.Embeddings")
         self.load_model("Summarizer.Summarizer")
         self.load_model("NER.NER")
-        self.load_model("Sentiment.Sentiment")
+        self.load_model("SentimentNuanced.Sentiment")
+        self.load_model("SentimentDiscreet.Sentiment")
         
     model_mapping = {
         'Causal' : CausalLM,
@@ -122,6 +123,12 @@ class Nexus(object):
     def generate_with_streaming(self, *args, **kwargs):
         yield self.CortexModel.generate_with_streaming(*args, **kwargs)
         
+    def load_grammar(self, grammarString):
+        self.CortexModel.params["grammar_string"] = grammarString
+
+    def reset_grammar(self):
+        self.CortexModel.params["grammar_string"] = ""
+        
     def compute_embeddings(self, prompts):
         self.activate_model("Embeddings.Embeddings")
         result = self.ShardModels["Embeddings.Embeddings"].compute_embeddings(prompts)
@@ -162,10 +169,16 @@ class Nexus(object):
         self.deactivate_model("NER.NER")
         return result
     
-    def getSentiment(self, prompt):
-        self.activate_model("Sentiment.Sentiment")
-        result = self.ShardModels["Sentiment.Sentiment"].generate(prompt)
-        self.deactivate_model("Sentiment.Sentiment")
+    def getSentiment(self, prompt, nuanced=True):
+        if(nuanced):
+            self.activate_model("SentimentNuanced.Sentiment")
+            result = self.ShardModels["SentimentNuanced.Sentiment"].generate(prompt)
+            self.deactivate_model("SentimentNuanced.Sentiment")
+        else:
+            self.activate_model("SentimentDiscreet.Sentiment")
+            result = self.ShardModels["SentimentDiscreet.Sentiment"].generate(prompt)
+            self.deactivate_model("SentimentDiscreet.Sentiment")
+        
         return result
     
 

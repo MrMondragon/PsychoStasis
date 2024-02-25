@@ -54,7 +54,6 @@ class Memory(object):
   def CreateEpisodicMemory(self, input, conversationId, role, proxy, entities, 
                            sentiment, tags, innerThoughts):
     timestamp = int(datetime.datetime.now())
-    documents=input
     metadata={
             "conversationId": conversationId,
             "role": role,
@@ -66,24 +65,19 @@ class Memory(object):
             "innerThoughts": innerThoughts            
         }
     
-    return documents, metadata,     
+    return metadata    
   
-  def CreateFactualMemory(self, input, conversationId, entryId, role, proxy, sentiment, tags):
+  def CreateSimpleMemory(self, input, conversationId, proxy, tags):
     timestamp = int(datetime.datetime.now())
-    documents=[input]
     metadata=[
       {
        "conversationId": conversationId,
-            "entryId": entryId,
-            "role": role,
             "proxy": proxy,
-            "sentiment": sentiment,
             "tags": tags,
-            "timestamp": timestamp,
-            "id": str(uuid.uuid4())
+            "timestamp": timestamp
       }
     ]
-    return documents, metadata    
+    return metadata
 
   #I firmly refuse to use metadatas as a plural for metadata!!!!
   def CommitToMemory(self, memoryLevel, documents, metadata, ids):

@@ -193,11 +193,13 @@ class Proxy:
   
   def UnloadLora(self):
     pass
-  def enterSubContext(self, deepCopy=False, copySystem=False, copyLast=False, innerThoughts=False, resetCortex=False):
+  def enterSubContext(self, deepCopy=False, copySystem=False, copyLastMessage=False,copyLastAnswer=False,
+                      copyContextualInfo =False, 
+                      innerThoughts=False, resetCortex=False, start = None, end = None):
     newContext = Context()
     if(resetCortex):globalNexus.CortexModel.reset()
     context = self.innerThoughts if innerThoughts else self.context
-    print(f"Entering context {newContext.contextID} from context {self.context.contextID}")
+    print(f"Entering context {newContext.contextID} from context {context.contextID}")
     newContext.userName = context.userName  
     newContext.parentContext = context
     newContext.proxy = context.proxy
@@ -206,14 +208,22 @@ class Proxy:
     
     if(deepCopy):
       newContext.message_history = copy.deepcopy(context.message_history)
-    if(copyLast):
-      newContext.contextual_info = copy.deepcopy(context.contextual_info)   
+    elif (start or end):
+      newContext.message_history = context.get_relevant_context(start=start, end=end)
+
+    if(copyLastMessage):
       newContext.last_message = context.last_message
+      newContext.append_message(context.last_message, role="user")
+    if(copyLastAnswer):
       newContext.last_answer = context.last_answer
+      newContext.append_message(context.last_answer, role="assistant")
+    
     if(copySystem):
       newContext.systemMessage = context.systemMessage
       
-    context = newContext
+    if(copyContextualInfo):
+      newContext.contextual_info = copy.deepcopy(context.contextual_info)   
+    
     
     if(innerThoughts):
       self.innerThoughts = newContext
@@ -226,7 +236,10 @@ class Proxy:
     context = self.innerThoughts if innerThoughts else self.context
     if(context.parentContext):
       print(f"exiting context {self.context.contextID} to context {self.context.parentContext.contextID}")    
-      context = context.parentContext
+      if(innerThoughts):
+        self.innerThoughts = context.parentContext
+      else:
+        self.context = context.parentContext
       return context
   
   def deactivateCortex(self):
