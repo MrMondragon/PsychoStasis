@@ -34,9 +34,10 @@ feedback and web-search keywords to memory entries
   o Fact extraction and conversation classification 
 - Use of tools such as web-search and external API’s 
 - Ability to generate and execute code
+- Use of grammar files to enable consistent output for function calling and other tasks 
+- Developed in python, using PyTorch, Llama.cpp for python, Transformers and many other libraries.
 
 Observations:
 - I am deliberately not using some tools and libs (like Langchain and Agent frameworks) because one of the goals of this project is to implement things similar to what those libraries do in order to study and learn.
 - Part of the code on the model loaders was heavily inspired by the code of oobabooga's own model loaders
- Use of grammar files to enable consistent output for function calling and other tasks 
- Developed in python, using PyTorch, Llama.cpp for python, Transformers and many other libraries.
+
