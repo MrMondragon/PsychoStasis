@@ -12,7 +12,7 @@ class CommitToMemory(BaseCognitiveProcess):
     
   def _internalRun(self):
     super()._internalRun()
-    localContext = self.getLocalContext(innerThoughts=False)
+    localContext = self.getLocalContext()
     if(localContext != []):
       texContext = "\n".join([message["content"] for message in localContext])
       entities = globalNexus.getNER(texContext)

@@ -45,8 +45,8 @@ class Proxy:
     self.shards = {} if "shards" not in kwargs else kwargs["shards"];
     self.memory = None
     self.params = kwargs
+    self.shouldGenerate = True
     self.collective = None    
-    self.authoritative = False
     self.context.systemMessage = self.GenerateSystem()
     self.innerPersona =  "" if "inner_persona" not in kwargs else kwargs["inner_persona"];
     self.innerThoughts.systemMessage = self.GenerateSystem(innerThoughts = True)
@@ -135,11 +135,15 @@ class Proxy:
   def ReceiveMessage(self, message, role="user"):
     self.context.messageSender = self.context.userName
     self.context.senderRole = role
+    self.shouldGenerate = True
 
     if(message.startswith("/")):
       self.context.last_message = message
+      self.shouldGenerate = False #stopr generation for authoritative messages. 
+      #Authoritative processes may set this back to true to proceed with normal generation
       cognitiveSystem.RunProcesses(proxy=self, context="authoritativeMessage")        
-    else:
+    
+    if(self.shouldGenerate):
       cognitiveSystem.RunProcesses(proxy=self, context="messageReceived")  
       answer = self.GenerateAnswer(prompt=message)
       cognitiveSystem.RunProcesses(proxy=self, context="afterMessageReceived")

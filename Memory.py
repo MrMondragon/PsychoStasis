@@ -1,8 +1,6 @@
 from chromadb import PersistentClient
 from Nexus import NexusEmbeddingFunction
-import itertools
 import datetime
-import uuid
 
 positive = ["yes", "sure", "ok", "okay", "yeah", "yup", "yep", "yea", "yah", "yas", "ya", "yap"]
 negative = ["no", "nope", "nah", "nay", "nope", "nah", "nay"]
@@ -51,7 +49,7 @@ class Memory(object):
       ids = [f"id_{i}" for i in range(0, len(words))]
       self.closestWordMemory.add(documents=words, ids=ids)
       
-  def CreateEpisodicMemory(self, input, conversationId, role, proxy, entities, 
+  def CreateEpisodicMemory(self, conversationId, role, proxy, entities, 
                            sentiment, tags, innerThoughts):
     timestamp = int(datetime.datetime.now())
     metadata={
@@ -67,7 +65,7 @@ class Memory(object):
     
     return metadata    
   
-  def CreateSimpleMemory(self, input, conversationId, proxy, tags):
+  def CreateSimpleMemory(self, conversationId, proxy, tags):
     timestamp = int(datetime.datetime.now())
     metadata=[
       {
@@ -110,18 +108,7 @@ class Memory(object):
         list.append({"id": ids[i], "distance": query["distances"][0][i]})
     return list    
 
-  def sentenceToBoolean(self, choice):
-    query = self.booleanDiscriminationMemory.query(query_texts=[choice], n_results=1, where=[], include=[])
-    id = query["ids"][0][0]
-    if(id == "1"):
-      return True
-    else:
-      return False
+
     
-  def getClosestWord(self, sentence, top_k=1):
-    query = self.closestWordMemory.query(query_texts=[sentence], 
-                                         n_results=top_k, where=[], include=["documents"])
-    word = query["documents"][0]
-    return word
     
 globalMemory = Memory()    

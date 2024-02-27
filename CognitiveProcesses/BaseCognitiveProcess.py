@@ -17,10 +17,13 @@ class BaseCognitiveProcess(object):
     self.Name = procConfig["name"]
     self.contextCallback = self.ExpandContext
     self.shouldRun = True if "shouldRun" not in procConfig else procConfig["shouldRun"]
+    self.innerThoughts = False
     self.proxy: Proxy = None
   
-  def Run(self, proxy):
+  def Run(self, proxy, **kwargs):
     self.proxy = proxy
+    if("innerThoughts" in kwargs):
+      self.innerThoughts = kwargs["innerThoughts"]
     if(self.ShouldRun(proxy)):
       oldGrammar = ""
       if(self.Grammar):
@@ -52,12 +55,12 @@ class BaseCognitiveProcess(object):
       
       prompt = decisoryStatement
       
-      decision = self.proxy.GenerateAnswer(prompt= prompt, shard=self.Shard, contextCallback = self.contextCallback, innerThoughts = False)
+      decision = self.proxy.GenerateAnswer(prompt= prompt, shard=self.Shard, contextCallback = self.contextCallback, innerThoughts = self.innerThoughts)
       if(decision.lower() != "none"):
         choice = self.ChooseSubProcess(decision)
         if(not choice):
           prompt += "You have chosen an invalid option. Please try again.\n"
-          decision = self.proxy.GenerateAnswer(prompt= prompt, shard=self.Shard, contextCallback = self.contextCallback, innerThoughts = False)
+          decision = self.proxy.GenerateAnswer(prompt= prompt, shard=self.Shard, contextCallback = self.contextCallback, innerThoughts = self.innerThoughts)
           choice = self.ChooseSubProcess(decision)
         if(choice):
           choice.Run()
@@ -80,7 +83,7 @@ class BaseCognitiveProcess(object):
       result = True    
       if(self.DecisoryStatement):
         prompt = f"You now have the option to {self.DecisoryStatement}. Is it applicable?  Answer with yes or no only."
-        decision = self.proxy.GenerateAnswer(prompt= prompt, shard=self.Shard, contextCallback = self.contextCallback, innerThoughts = False)
+        decision = self.proxy.GenerateAnswer(prompt= prompt, shard=self.Shard, contextCallback = self.contextCallback, innerThoughts = self.innerThoughts)
         result = globalMemory.sentenceToBoolean(decision)
     
       if(self.proxy.context.verbose):
@@ -90,8 +93,8 @@ class BaseCognitiveProcess(object):
     if(self.proxy.context.verbose):
       print(f"Internal execution for {self.Name}")
       
-  def getLocalContext(self, innerThoughts = False):
-    context = self.proxy.context if not innerThoughts else self.proxy.innerThoughts
+  def getLocalContext(self):
+    context = self.proxy.context if not self.innerThoughts else self.proxy.innerThoughts
     if(len(context.message_history)%self.frequency == 0):
       freq = self.frequency * -1
       localContext = context.message_history[freq:]
@@ -108,5 +111,20 @@ class BaseCognitiveProcess(object):
     self.proxy.context.message_history.extend(localContext)
     answer = self.proxy.GenerateAnswer(shard=self.Shard, prompt=prompt)
     self.proxy.exitSubContext()
-    boolAnswer = globalMemory.sentenceToBoolean(answer)
+    boolAnswer = self.sentenceToBoolean(answer)
     return boolAnswer
+  
+  def sentenceToBoolean(self, choice):
+    query = globalMemory.booleanDiscriminationMemory.query(query_texts=[choice], n_results=1, where=[], include=[])
+    id = query["ids"][0][0]
+    if(id == "1"):
+      return True
+    else:
+      return False
+    
+
+  def getClosestWord(self, sentence, top_k=1):
+    query = globalMemory.closestWordMemory.query(query_texts=[sentence], 
+                                         n_results=top_k, where=[], include=["documents"])
+    word = query["documents"][0]
+    return word    
