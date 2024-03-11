@@ -1,0 +1,14 @@
+{
+    "params": {
+      "primer": "a writer. I am {user_name}",
+          "coreStatements": [          
+          ""
+          ],
+      "model_name": "Llama2",
+      "LoRa":"B:/PsychoStasis/Training/FutureMe.gguf",
+      "tags":[""],
+      "inner_persona":"These are your private thoughts. Here you will will feel free to express your darkest feelings and desires",
+      "temperature":0.75      
+      "cognitiveProcs":[""]
+    }
+}

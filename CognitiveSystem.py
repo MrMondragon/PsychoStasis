@@ -1,59 +1,38 @@
-import glob
-import importlib
-import json
-import os
+from DynamicSystem import DynamicSystem
+from collections import deque
 
-
-
-process_path = 'CognitiveProcesses/'
-
-class CognitiveSystem(object):
-  def __init__(self) -> None:
-    self.processes = {}
-    self.processConfigs = {}    
+class CognitiveSystem(DynamicSystem):
+  def __init__(self, **kwargs) -> None:
+    super().__init__(**kwargs)
     self.commonProcesses = []
-    self.LoadProcessConfigs()
+    self.stack = deque()
+    self.params = {}
+    self.params["system"] = "system1"
     
+    comonProcesses = list(filter(lambda proc: proc.common, self.processes.values()))
+    for proc in comonProcesses:
+      self.commonProcesses.append(proc.Name)
 
   def RunProcesses(self, proxy, context):
-    processes = list(filter(lambda proc: (context in proc["contexts"])
-                            and ((proc["name"] in proxy.cognitiveProcs) 
-                            or (proc["name"] in self.commonProcesses)), self.processConfigs.values()))
-                            
+    self.params = {}
+    self.params["system"] = "system1"
+    processes = list(filter(lambda proc: (context in proc.contexts)
+                            and ((proc.Name in proxy.cognitiveProcs) 
+                            or (proc.Name in self.commonProcesses)), self.processes.values()))
+    
+    if(proxy.collective != None):
+      processes = list(filter(lambda proc: ((proc.Name not in proxy.collective.cognitiveProcs) and
+                                            (proc.Name not in self.commonProcesses)), processes))
     if processes:
-      for proc in processes:
-        process =self.InstantiateProcess(proc["name"])
-        process.Run(proxy)
-      
-  def LoadProcessConfigs(self):
-    cwd = os.getcwd()
-    workPath = os.path.join(cwd, process_path) 
-    pattern = f"*.process"    
-    fileList = glob.glob(os.path.join(workPath, pattern))    
-    if fileList:  # If list is not empty
-      for filename in fileList:
-        with open(filename) as f:
-          data = json.load(f)
-          procName = data["name"]          
-          self.processConfigs[procName] = data
-          if(data["common"]):
-            self.commonProcesses.append(procName)          
-      
-  def InstantiateProcess(self, procName):
-    if(not procName in self.processes):
-      procCfg = self.processConfigs[procName]      
-      module = importlib.import_module(procName)
-      cls = getattr(module, procName)
-      procObject = cls(name=procCfg, kwargs=self.processConfigs[procName])
-      self.processes[procName] = procObject
-    else:
-      procObject = self.processes[procName]
-    return procObject
+      processes.sort(key=lambda proc: proc.priority)
+      self.stack = deque()
+      self.stack.extend(processes)
+      while(len(self.stack) > 0):
+        proc = self.stack.popleft()
+        proc.Run(proxy)
   
-  def RegisterCommonProcesses(self, proxy):
-    if(self.commonProcesses):
-      for proc in self.commonProcesses:
-        proxy.cognitiveProcs.append(proc)
+  def getProcessPath(self):
+    return "/CognitiveProcesses/"
 
 
 cognitiveSystem = CognitiveSystem()  

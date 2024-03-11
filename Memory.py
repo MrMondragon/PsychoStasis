@@ -1,4 +1,4 @@
-from chromadb import PersistentClient
+from chromadb import PersistentClient, Client
 from Nexus import NexusEmbeddingFunction
 import datetime
 
@@ -14,17 +14,31 @@ class Memory(object):
   def __init__(self):
     self.path = './Memory/'
     self.client = PersistentClient(self.path)
+    self.transientClient = Client()
+    
+    #####transient context for conversations#####
+    self.contextMemory = self.transientClient.get_or_create_collection("contextMemory",
+                                                       embedding_function=NexusEmbeddingFunction())
+    
     self.episodicMemory = self.client.get_or_create_collection("episodicMemory",
                                                                embedding_function=NexusEmbeddingFunction())
     
     self.factualMemory = self.client.get_or_create_collection("factualMemory",
                                                                embedding_function=NexusEmbeddingFunction())
     
-    self.innerMemory = self.client.get_or_create_collection("innerMemory",
+    self.relationalMemory = self.client.get_or_create_collection("relationalMemory",
                                                              embedding_function=NexusEmbeddingFunction())
     
     self.consolidatedMemory = self.client.get_or_create_collection("consolidatedMemory",
                                                                    embedding_function=NexusEmbeddingFunction())
+    #stores tags for vectorial search
+    #tagging conversations as an authoritative command
+    #tags are stored in the metadata as well as here
+    #structure is {tag: [conversationId1, conversationId2, conversationId3]}
+    self.tagMemory = self.client.get_or_create_collection("tagMemory",
+                                                                   embedding_function=NexusEmbeddingFunction())
+
+    ############################Study Private gpt to see the structure of documental memory
     #raw text
     self.documentalMemoryLevel0 = self.client.get_or_create_collection("documentalMemoryLevel0",
                                                                        embedding_function=NexusEmbeddingFunction())
@@ -35,6 +49,8 @@ class Memory(object):
     self.documentalMemoryLevel2 = self.client.get_or_create_collection("documentalMemoryLevel2",
                                                                        embedding_function=NexusEmbeddingFunction())
     
+    
+    ####################Discriminatory Memories####################
     self.booleanDiscriminationMemory = self.client.get_or_create_collection("booleanDiscriminationMemory",
                                                                            embedding_function=NexusEmbeddingFunction())
     if(self.booleanDiscriminationMemory.count() == 0):
@@ -48,6 +64,7 @@ class Memory(object):
       words = list(filter(lambda s: not any(s.startswith(c) for c in invalidChars) and len(s)>2, words))
       ids = [f"id_{i}" for i in range(0, len(words))]
       self.closestWordMemory.add(documents=words, ids=ids)
+      
       
   def CreateEpisodicMemory(self, conversationId, role, proxy, entities, 
                            sentiment, tags, innerThoughts):
@@ -83,6 +100,7 @@ class Memory(object):
                                           embedding_function=NexusEmbeddingFunction())
     memoryLevel.upsert(documents=documents, metadatas=metadata, ids=ids)
     
+ ########################################################TEST TO SEE IF UPDATING TAGS WILL OVERWRITE OR APPEND THE TAGS
   def UpdateMemoryMetadata(self, memoryLevel, query, metadata, maxRecords):
     memoryLevel = self.client.get_or_create_collection(memoryLevel,
                                           embedding_function=NexusEmbeddingFunction())
@@ -109,6 +127,20 @@ class Memory(object):
     return list    
 
 
+  def TagMemory(self, proxy, tag):
+    
+    if(self.tagMemory.exists("tag")):
+      entry = self.tagMemory.get("tag")
+      tagConversations =entry.metadata.get("conversations", [])
+      if(not proxy.context.contextID in tagConversations):
+        tagConversations.append(proxy.context.contextID)
+    
+    self.tagMemory.update_metadata(
+    entry_id=tag,
+    metadata={"conversations": tagConversations},
+    merge=True  # Set merge=True to merge the new metadata with the existing metadata
+    )
+    
     
     
 globalMemory = Memory()    

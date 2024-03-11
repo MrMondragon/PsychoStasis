@@ -11,7 +11,7 @@ class Context(object):
     self.contextID = uuid.uuid4()
     self.message_history = []
     self.systemMessage = None
-    self.window_size = 2048 - 512 #typical context - typical max tokens
+    self.window_size = 3072 - 512 #typical context - typical max tokens
     self.last_message = None
     self.contextual_info = None
     self.last_answer = None
@@ -124,27 +124,32 @@ class Context(object):
     return result
   
   def append_message(self, message, role):
-    self.last_message = message
-    messageId = f"{role}-{uuid.uuid4()}"
-    tokens = self.get_token_size(message)    
-    message = {"role":role, "content":message, "id":messageId,
-                 "created":str(datetime.datetime.now()), "tokens":tokens}
-    self.message_history.append(message)
-    if(self.verbose):
-      print(f"Message: {self.last_message}")
+    if(message):
+      self.last_message = message
+      messageId = f"{role}-{uuid.uuid4()}"
+      tokens = self.get_token_size(message)    
+      message = {"role":role, "content":message, "id":messageId,
+                  "created":str(datetime.datetime.now()), "tokens":tokens}
+      self.message_history.append(message)
+      if(self.verbose):
+        print(f"Message: {self.last_message}")
     return message
   
   
-  def append_message_object(self, role, message):
+  def append_answer(self, role, message):
     id = message["id"]
     id = id.replace("chatcmpl", role)
     msg = message["choices"][0]["message"]["content"]
-    msgObject = {"role":role, "content":msg, "id":id, "created":str(datetime.datetime.now()),
-                 "tokens":message["usage"]["completion_tokens"]}
-    self.message_history.append(msgObject)
-    self.last_answer = msg
-    if(self.verbose):
-      print(f"Answer: {self.last_answer}")
+    if(msg):
+      while r"\n" in msg:
+        msg = msg.replace(r"\n", "\n")
+        
+      msgObject = {"role":"assistant", "content":f"{role}: {msg}", "id":id, "created":str(datetime.datetime.now()),
+                  "tokens":message["usage"]["completion_tokens"]}
+      self.message_history.append(msgObject)
+      self.last_answer = msg
+      if(self.verbose):
+        print(f"Answer: {self.last_answer}")
 
     
   def remove_last(self):
@@ -179,6 +184,25 @@ class Context(object):
     return math.ceil(len(self.message_history) / chunkSize)
     
 
+  def switchUp(self, n, l):
+
+    msgs = self.message_history[-n:]
+    self.message_history = self.message_history[0:-n]
+    upperPart = self.message_history[0:-l]
+    lowerPart = self.message_history[-l:]
+    
+    self.message_history = upperPart + msgs + lowerPart
+  
+  
+  def switchDown(self, n,l):
+    k = n+l
+    msgs = self.message_history[-k:-l]
+    
+    upperPart = self.message_history[0:-k]
+    lowerPart = self.message_history[-l:]
+    
+    self.message_history = upperPart + lowerPart + msgs
+    
 
 
 

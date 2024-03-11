@@ -67,6 +67,7 @@ class Nexus(object):
         return data, os.path.basename(filename)
     
     def load_model(self, model_name,  **kwargs):
+        
         if (model_name != self.CortexModel_name) and (model_name not in self.ShardModels):
             data, file_name  = Nexus.get_model_data(model_name)
             core = data["core"]
@@ -75,8 +76,7 @@ class Nexus(object):
             model = model_class(model_name, **kwargs)
             
             if core:
-                model.load()
-                model.active = True
+                model.active = False
                 self.CortexModel = model
                 self.CortexModel_name = model.model_name
             else:
@@ -92,10 +92,16 @@ class Nexus(object):
             model.unload()
 
     def activate_model(self, model_name:str):
-        self.ShardModels[model_name].activate()
+        if(model_name == self.CortexModel_name):
+            self.CortexModel.activate()
+        else:
+            self.ShardModels[model_name].activate()
 
     def deactivate_model(self, model_name:str):
-        self.ShardModels[model_name].deactivate() 
+        if(model_name == self.CortexModel_name):
+            self.CortexModel.deactivate()
+        else:
+            self.ShardModels[model_name].deactivate() 
             
     def get_memory_usage(self):
         nvidia_smi.nvmlInit()
@@ -107,9 +113,10 @@ class Nexus(object):
         nvidia_smi.nvmlShutdown()
         return {f'total:{total_memory}, free:{free_memory}, used:{used_memory} --- {datetime.now()}'}
  
-    def generate_completion_cortex(self, localContext, callback = None, model_name:str = None):
+    def generate_completion_cortex(self, localContext, callback = None, model_name:str = None, max_tokens = 0):
         print(f"performing inference with {self.CortexModel_name}")
-        return self.CortexModel.generate(localContext, callback)
+        self.CortexModel.activate()
+        return self.CortexModel.generate(localContext, callback, max_tokens=max_tokens)
     
     def generate_completion_shard(self, localContext, callback = None, model_name:str = None):
         print(f"performing inference with {model_name}")

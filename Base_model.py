@@ -86,7 +86,7 @@ class Base_model:
         max_memory['cpu'] = '64GiB'
         return max_memory
     
-    def generate(self, localContext, callback=None):
+    def generate(self, localContext, callback=None, max_tokens = 0):
         pass
         
     def reset():

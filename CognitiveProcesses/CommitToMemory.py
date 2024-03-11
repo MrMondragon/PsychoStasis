@@ -1,14 +1,23 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path("..")))
+sys.path.insert(0, str(Path(".")))
 import uuid
 from Memory import globalMemory
 from Nexus import globalNexus
-from BaseCognitiveProcess import BaseCognitiveProcess
+from _BaseCognitiveProcess import BaseCognitiveProcess
 from Proxy import Proxy
 
 
 class CommitToMemory(BaseCognitiveProcess):
-  def __init__(self, name, **kwargs) -> None:
-    super().__init__(name, **kwargs)
+  def __init__(self, **kwargs) -> None:
+    super().__init__(**kwargs)
     self.shouldRun = True
+    self.Name = "CommitToMemory"
+    self.Contexts = ["afterMessageReceived"] if "contexts" not in kwargs else kwargs["contexts"]
+    self.Frequency = 10 if "frequency" not in kwargs else kwargs["frequency"]
+    self.shouldRun = True if "shouldRun" not in kwargs else kwargs["shouldRun"]
+    self.common = True
     
   def _internalRun(self):
     super()._internalRun()
@@ -69,3 +78,5 @@ class CommitToMemory(BaseCognitiveProcess):
                                              proxy=self.proxy.name,
                                              tags=[])
       globalMemory.CommitToMemory(memoryLevel="consolidatedMemory", documents=[summary], metadata=[data], ids=[conversationId])
+      
+      

@@ -1,3 +1,4 @@
+import os
 import re
 from functools import partial
 import numpy as np
@@ -22,6 +23,8 @@ except:
     llama_cpp_cuda_tensorcores = None
     
 from Base_model import Base_model
+
+lora_path="LoRa/"
     
 def ban_eos_logits_processor(eos_token, logits):
     logits[eos_token] = -float('inf')
@@ -65,6 +68,7 @@ class GGUF_model(Base_model):
         self.params['compress_pos_emb'] = 1 if 'compress_pos_emb' not in self.params else self.params['compress_pos_emb']
         self.params['chat_format'] =  "llama-2" if 'chat_format' not in self.params else self.params['chat_format']
         self.params['max_tokens'] =  1024 if 'max_tokens' not in self.params else self.params['max_tokens']
+        self.params['LoRa'] =  "" if 'LoRa' not in self.params else self.params['LoRa']
         
         self.initialized = False
         self.grammar_string = ''
@@ -88,6 +92,18 @@ class GGUF_model(Base_model):
   
     def load(self):
         Llama = self.llama_cpp_lib().Llama
+        
+        
+        
+        if(self.params['LoRa'] != ""):
+            #cwd = os.getcwd()
+            #lora_path = os.path.join(cwd, lora_path, self.params['LoRa'])
+            Llama.lora_path = self.params['LoRa'] #lora_path            
+        else:
+            Llama.lora_path = None
+            
+        print("LoRa: ", Llama.lora_path)
+            
         LlamaCache = self.llama_cpp_lib().LlamaCache 
 
         cache_capacity = 0
@@ -100,7 +116,6 @@ class GGUF_model(Base_model):
             else:
                 cache_capacity = int(self.params['cache-capacity'])    
 
-
             if self.params['tensor_split']  is None or self.params['tensor_split'].strip() == '':
                 tensor_split_list = None
             else:
@@ -108,6 +123,7 @@ class GGUF_model(Base_model):
 
             params = {
                 'model_path': str(self.path),
+                'lora_base': str(self.path),
                 'n_ctx': self.params['n_ctx'],
                 'n_threads': self.params['threads'] or None,
                 'n_threads_batch': self.params['threads-batch'] or None,
@@ -127,8 +143,10 @@ class GGUF_model(Base_model):
             self.tokenizer = self.model
             if(cache_capacity > 0):
                 self.model.set_cache(LlamaCache(cache_capacity))
+            self.reset()
+            
    
-    def generate(self, localContext, callback=None):
+    def generate(self, localContext, callback=None, max_tokens = 0):
         super().generate(localContext, callback)
         LogitsProcessorList = self.llama_cpp_lib().LogitsProcessorList
 
@@ -152,7 +170,7 @@ class GGUF_model(Base_model):
        
         completion_chunks = self.model.create_chat_completion(
             messages=localContext,
-            max_tokens=self.params['max_tokens'],
+            max_tokens=self.params['max_tokens'] if max_tokens == 0 else max_tokens,
             temperature=self.params['temperature'],
             top_p=self.params['top_p'],
             min_p=self.params['min_p'],
@@ -174,6 +192,8 @@ class GGUF_model(Base_model):
 
         output = completion_chunks
         
+        
+        
         #if(self.streaming):
         #    text = ""
         #    for completion_chunk in completion_chunks:
@@ -184,6 +204,7 @@ class GGUF_model(Base_model):
         #        if callback:
         #            callback(text)
         #        yield text
+
 
         return output
 

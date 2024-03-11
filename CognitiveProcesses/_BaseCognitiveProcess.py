@@ -6,19 +6,21 @@ from Memory import globalMemory
 from Proxy import Proxy
 
 class BaseCognitiveProcess(object):
-  def __init__(self, procConfig) -> None:
-    self.DecisoryStatement = "" if "DecisoryStatement" not in procConfig else procConfig["decisoryStatement"] 
-    self.Shard = None if "Shard" not in procConfig else procConfig["shard"]
+  def __init__(self, **kwargs) -> None:
+    self.DecisoryStatement = "" if "DecisoryStatement" not in kwargs else kwargs["decisoryStatement"] 
+    self.Shard = None if "Shard" not in kwargs else kwargs["shard"]
     if(self.Shard):
       globalNexus.load_model(self.Shard)
     self.Grammar = None
-    self.SubProcesses = [] if "subProcesses" not in procConfig else procConfig["subProcesses"]
-    self.Frequency = "" if "frequency" not in procConfig else procConfig["frequency"]
-    self.Name = procConfig["name"]
-    self.contextCallback = self.ExpandContext
-    self.shouldRun = True if "shouldRun" not in procConfig else procConfig["shouldRun"]
+    self.Contexts = [] if "contexts" not in kwargs else kwargs["contexts"]
+    self.SubProcesses = [] if "subProcesses" not in kwargs else kwargs["subProcesses"]
+    self.Frequency = 1 if "frequency" not in kwargs else kwargs["frequency"]
+    self.Name = "name"
+    self.ContextCallback = self.ExpandContext
+    self.ShouldRun = True if "shouldRun" not in kwargs else kwargs["shouldRun"]
     self.innerThoughts = False
     self.proxy: Proxy = None
+    self.priorty = 100 if "priority" not in kwargs else kwargs["priority"]
   
   def Run(self, proxy, **kwargs):
     self.proxy = proxy
@@ -36,6 +38,10 @@ class BaseCognitiveProcess(object):
           
       self._internalRun()  
       self.ConditionalRunSubProcesses()  
+      
+      
+        
+                
       if(not self.Shard):
         globalNexus.CortexModel.params['grammar_string'] = oldGrammar
       else:
@@ -75,7 +81,7 @@ class BaseCognitiveProcess(object):
       return choice
   
   def ShouldRun(self):
-    if self.shouldRun:
+    if self.ShouldRun:
       return
     else:
       if(self.proxy.context.verbose):
