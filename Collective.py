@@ -11,16 +11,22 @@ class Collective(Proxy):
 
   def __init__(self, name, **kwargs) -> None:
     super().__init__(name,  pattern = f"{name}.collective")
-    proxies = [] if "proxies" not in kwargs else kwargs["proxies"]
+    proxies = [] if "proxies" not in self.params else self.params["proxies"]
+    self.activeSpeaker = None
     self.proxies = {}
     if(proxies):
       for proxy in proxies:
+        print(f"Loading proxy: {proxy}")
         self.proxies[proxy] = Proxy(proxy, collective=self)
         self.proxies[proxy].collective = self;
         self.proxies[proxy].context = self.context;
+        if(self.activeSpeaker == None):
+          print(f"Active Speaker: {proxy}")
+          self.activeSpeaker = self.proxies[proxy]
+        
     self.lastSpeaker = None
-    self.activeSpeaker = None
     self.isCollective = True
+    self.sysMessage = self.GenerateSystem()
     
     
       
@@ -60,21 +66,32 @@ class Collective(Proxy):
         proxy.ReceiveMessage(message=prompt)
         
   def ReceiveMessage(self, message, role="user"):
-    self.context.messageSender = self.context.userName
-    self.context.senderRole = role
+
+    sysMessage = self.sysMessage
+    
+    if("{proxy_name}" in sysMessage):
+        sysMessage = sysMessage.replace("{proxy_name}", self.activeSpeaker.name)   
+    if("{collective_members|proxy_name}" in sysMessage):
+      proxyList = self.proxies.keys()
+      proxyList = filter(lambda x: x != self.activeSpeaker.name, proxyList)
+      sysMessage = sysMessage.replace("{collective_members|proxy_name}", ", ".join(proxyList))
+        
+    self.context.systemMessage = sysMessage    
+    
     self.shouldGenerate = True    
     message = authoritativeSystem.Run(proxy=self, prompt=message, role=role)
     self.shouldGenerate = bool(message)
     if(self.shouldGenerate):#allows for interruption after authoritativeMessage
       cognitiveSystem.RunProcesses(proxy=self, context="collectiveMessageReceived")
     if(self.shouldGenerate):#allows for interruption after collectiveMessageReceived
-      answer = self.activeSpeaker.GenerateAnswer(prompt=message)
+      answer = self.activeSpeaker.ReceiveMessage(message=message, role=role)
       cognitiveSystem.RunProcesses(proxy=self, context="afterCollectiveMessageReceived")
     self.context.messageSender = None
     self.context.senderRole = None
     return answer
     
-      
+
+
       
       
       

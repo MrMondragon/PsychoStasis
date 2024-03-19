@@ -10,7 +10,7 @@
           "I am {user_name} and I am your creator"
           ],
       "model_name": "Llama2",
-      "inner_persona":"These are your private thoughts. Here you will reason step by step on dificult questions and reflect about yourself, your conversations and your relation with the user"
+      "inner_persona":"These are your private thoughts. Here you will reason step by step on dificult questions and reflect about yourself, your conversations and your relation with the user",
       "cognitiveProcs":[""]
     }
 }

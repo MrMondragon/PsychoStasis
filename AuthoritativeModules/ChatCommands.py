@@ -1,25 +1,30 @@
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path("..")))
-from AuthoritativeSystem import authoritativeSystem
 import re
+from _Command import _Command
 
 class ChatCommands(object):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
   
-  def RegisterCommands(self):
-    authoritativeSystem.Commands["<<"] = tuple(func = self.removeLast, descriptrion = "remove last context message")
-    authoritativeSystem.Commands[r"@\d+"] = tuple(func = self.at, descriptrion = "switch to speaker. @name, @all, @others, @any")
-    authoritativeSystem.Commands[r"/\^\d+(\^\d+)?"] = tuple(func = self.switchUp, descriptrion = "switch up context")
-    authoritativeSystem.Commands[r"/v\d+(v\d+)?"] = tuple(func = self.switchDown, descriptrion = "switch down context")
+  def RegisterCommands(self, authoritativeSystem):
+    authoritativeSystem.Commands["<<"] = _Command(func = self.removeLast, description = "remove last context message")
+    authoritativeSystem.Commands[r"@\w+"] = _Command(func = self.at, description = "switch to speaker. @name, @all, @others, @any")
+    authoritativeSystem.Commands[r"/A\d+(A\d+)?"] = _Command(func = self.switchUp, description = "switch up context")
+    authoritativeSystem.Commands[r"/V\d+(V\d+)?"] = _Command(func = self.switchDown, description = "switch down context")
     
   
   def removeLast(self, prompt, command, proxy):
-    if(command.startswith("<<<<")):
-      proxy.context.remove_last_pair()
-    elif (command.startswith("<<")):
-      proxy.context.remove_last()      
+    print(f"removing last message: {prompt}")
+    if(prompt.startswith("<<<<")):
+      proxy.context.remove_last() 
+      proxy.context.remove_last() 
+      print("last 2 messages removed")
+    elif (prompt.startswith("<<")):
+      proxy.context.remove_last() 
+      print("last message removed")
+    proxy.commitContext()     
     proxy.shouldGenerate = False
     return ""
     
@@ -27,17 +32,18 @@ class ChatCommands(object):
     atProxy = command
     prompt = prompt.replace(atProxy, "")
     prompt = prompt.strip()
-    atProxy = atProxy.lower().strip("@")    
-    if(atProxy == "any"):
+    atProxy = atProxy.strip("@")    
+    if(atProxy.lower() == "any"):
       proxy.SwitchToAny(prompt)
-    elif(atProxy == "all"):
+    elif(atProxy.lower() == "all"):
       proxy.All()
       return ""
-    elif(atProxy == "others"):
+    elif(atProxy.lower() == "others"):
       proxy.Others()
       return ""
     else:
       proxy.SwitchToSpeaker(atProxy)
+      prompt = atProxy + " " + prompt
     return prompt
   
   def switchUp(self, prompt, command, proxy):

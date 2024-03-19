@@ -1,22 +1,23 @@
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path("..")))
-from AuthoritativeSystem import authoritativeSystem
 from CognitiveSystem import cognitiveSystem
 from Memory import globalMemory
 import re
+from _Command import _Command
 
 class CognitiveCommands(object):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
   
-  def RegisterCommands(self):
-    authoritativeSystem.Commands["/system2"] = tuple(func = self.system2, descriptrion = "switch to system2")
-    authoritativeSystem.Commands[r"/remember"] = tuple(func = self.remember, descriptrion = "force commit to memory")
-    authoritativeSystem.Commands[r"/reflect"] = tuple(func = self.reflect, descriptrion = "reflect upon the conversation and add to extended core")
-    authoritativeSystem.Commands[r"/recall"] = tuple(func = self.recall, descriptrion = "recall a specific subject and add to extended context")
-    authoritativeSystem.Commands[r"/resetRecall"] = tuple(func = self.resetRecall, descriptrion = "reset extended context")
-    authoritativeSystem.Commands[r"/tag (\w|_)+"] = tuple(func = self.tag, descriptrion = "tag the conversation with a given subject")
+  def RegisterCommands(self, authoritativeSystem):
+    authoritativeSystem.Commands["/system2"] = _Command(func = self.system2, description = "switch to system2")
+    authoritativeSystem.Commands[r"/remember"] = _Command(func = self.remember, description = "force commit to memory")
+    authoritativeSystem.Commands[r"/reflect"] = _Command(func = self.reflect, description = "reflect upon the conversation and add to extended core")
+    authoritativeSystem.Commands[r"/recall"] = _Command(func = self.recall, description = "recall a specific subject and add to extended context")
+    authoritativeSystem.Commands[r"/resetRecall"] = _Command(func = self.resetRecall, description = "reset extended context")
+    authoritativeSystem.Commands[r"/understand"] = _Command(func = self.understand, description = "force a fact to the factual memory")
+    authoritativeSystem.Commands[r"/tag (\w|_)+"] = _Command(func = self.tag, description = "tag the conversation with a given subject")
     
   def system2(self, proxy, prompt, command):
     prompt = prompt.replace(command, "")
@@ -42,6 +43,12 @@ class CognitiveCommands(object):
     prompt = prompt.replace(command, "")
     cognitiveSystem.params["resetRecall"] = True
     return prompt
+  
+  def understand(self, proxy, prompt, command):
+    prompt = prompt.replace(command, "")
+    globalMemory.Understand(proxy, prompt)
+    return ""
+
   
   def tag(self, proxy, prompt, command):
     prompt = prompt.replace(command, "")

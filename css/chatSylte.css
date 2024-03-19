@@ -1,0 +1,127 @@
+.message {
+    display: grid;
+    grid-template-columns: 60px minmax(0, 1fr);
+    padding-bottom: 15px;
+    font-size: 15px;
+    font-family: 'Noto Sans', Helvetica, Arial, sans-serif;
+    line-height: 22.5px !important;
+}
+
+.message-body {
+    margin-top: 3px;
+}
+
+.circle-you {
+    width: 50px;
+    height: 50px;
+    background-color: rgb(238 78 59);
+    border-radius: 50%;
+}
+
+.circle-bot {
+  width: 50px;
+  height: 50px;
+  background-color: rgb(59 78 244);
+  border-radius: 50%;
+  float: left;
+  margin-right: 10px;
+  margin-top: 5px;
+}
+
+.circle-bot img,
+.circle-you img {
+    border-radius: 50%;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.circle-you {
+  margin-top: 5px;
+}
+
+.circle-bot + .text, .circle-you + .text {
+  border-radius: 18px;
+  padding: 8px 12px;
+}
+
+.circle-bot + .text {
+  background-color: #425c9c;
+  float: left;
+}
+
+.circle-you + .text {
+  background-color: rgb(6, 48, 87);
+  margin-right: 10px;
+}
+
+.circle-you + .text div, .circle-you + .text *, .dark .circle-you + .text div, .dark .circle-you + .text * {
+  color: #FFF !important;
+}
+
+.username {
+    font-weight: bold;
+}
+
+
+.dark .circle-bot + .text div, .dark .circle-bot + .text * {
+  color: #FFF;
+}
+
+.text {
+  max-width: 80%;
+}
+
+.text p {
+  margin-top: 5px;
+}
+
+
+.message-body img {
+    max-width: 300px;
+    max-height: 300px;
+    border-radius: 20px;
+}
+
+.message-body p {
+    font-size: 15px !important;
+    line-height: 22.5px !important;
+}
+
+.message-body p, .chat .message-body ul, .chat .message-body ol {
+    margin-bottom: 10px !important;
+}
+
+.dark .message-body p em {
+    color: rgb(138 138 138) !important;
+}
+
+.message-body p em {
+    color: rgb(110 110 110) !important;
+    font-weight: 500;
+}
+
+
+
+
+.chat {
+  margin-left: auto;
+  margin-right: auto;
+  max-height: 720px;
+  min-height: 720px;
+  overflow-y: scroll; 
+  padding-right: 15px;
+  display: flex;
+  flex-direction: column;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  border-top: none;
+  border-radius: 0 0 0 8px;
+}
+
+
+.chat > .messages {
+  display: flex;
+  flex-direction: column;
+  padding-top: 25px;
+}

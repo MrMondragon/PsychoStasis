@@ -9,22 +9,22 @@ class AuthoritativeSystem(DynamicSystem):
     self.RegisterCommands()
     
     
-  def Run(self, proxy, message, role):
-    while(re.match(r"\W", message)): #check if message is a command. Commands must ALWAYS start with \W, non word char
+  def Run(self, proxy, prompt, role):
+    if(re.match(r"\W", prompt)): #check if prompt is a command. Commands must ALWAYS start with \W, non word char
       expressions = self.Commands.keys()
       for expression in expressions:
-        command = re.match(expression, message)
+        command = re.match(expression, prompt)
         if(command):
-          message = self.Commands[expression](proxy=proxy,prompt=message, command = command.group())
-    return message
+          prompt = self.Commands[expression].func(proxy=proxy,prompt=prompt, command = command.group())
+    return prompt
     
     
   def getProcessPath(self):
-    return "/AuthoritativeModules/"
+    return "AuthoritativeModules"
   
   def RegisterCommands(self):
-    for process in self.processes:
-      process.RegisterCommands()  
+    for process in self.processes.values():
+      process.RegisterCommands(self)  
       
       
 authoritativeSystem = AuthoritativeSystem()

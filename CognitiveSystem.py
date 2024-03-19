@@ -4,14 +4,12 @@ from collections import deque
 class CognitiveSystem(DynamicSystem):
   def __init__(self, **kwargs) -> None:
     super().__init__(**kwargs)
-    self.commonProcesses = []
+    commonProcesses = list(filter(lambda proc: proc.common, self.processes.values()))
+    self.commonProcesses = list(map(lambda proc: proc.Name, commonProcesses))
     self.stack = deque()
     self.params = {}
     self.params["system"] = "system1"
-    
-    comonProcesses = list(filter(lambda proc: proc.common, self.processes.values()))
-    for proc in comonProcesses:
-      self.commonProcesses.append(proc.Name)
+
 
   def RunProcesses(self, proxy, context):
     self.params = {}
@@ -32,7 +30,7 @@ class CognitiveSystem(DynamicSystem):
         proc.Run(proxy)
   
   def getProcessPath(self):
-    return "/CognitiveProcesses/"
+    return "CognitiveProcesses"
 
 
 cognitiveSystem = CognitiveSystem()  

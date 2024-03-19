@@ -1,6 +1,7 @@
 from chromadb import PersistentClient, Client
-from Nexus import NexusEmbeddingFunction
+from Nexus import NexusEmbeddingFunction, globalNexus
 import datetime
+from collections import deque
 
 positive = ["yes", "sure", "ok", "okay", "yeah", "yup", "yep", "yea", "yah", "yas", "ya", "yap"]
 negative = ["no", "nope", "nah", "nay", "nope", "nah", "nay"]
@@ -9,17 +10,48 @@ invalidChars = ["#", "@", "!", "$", "%", "^", "&", "*", "(", ")", "-", "_", "=",
 positiveStr = " ".join(positive)
 negativeStr = " ".join(negative)
 
+basePriority = 500
 
 class Memory(object):
   def __init__(self):
     self.path = './Memory/'
     self.client = PersistentClient(self.path)
     self.transientClient = Client()
+  
     
-    #####transient context for conversations#####
-    self.contextMemory = self.transientClient.get_or_create_collection("contextMemory",
-                                                       embedding_function=NexusEmbeddingFunction())
     
+    #  Context memory is not a collection!!
+    #  it is a message list with priority which is manipulated by
+    #  the cognitive system
+    #  then the context of the proxy absorbs it partially or fully in priority order
+    #  distance based information is inserted with the formula
+    #  ((1/distance) * base priority) + base priority
+    
+    self.recollectionContext = [] # tuple(text, priority: float, metadata: dict, tokenSize: int, contextID: str)    
+    self.recollectionQueries = []
+    
+    ### Context consumes memory and not the other way around (to avoid circular references)
+    ### Check response with personality
+    ###   does this answer align with your personality?
+    ##      tell me a fact about you that shows this misalignment
+    ##      feed fact back into extended core
+    ##      rephrase it so that it better aligns with your personality
+    
+    #  evaluate each metadata to see if, when and how it will be used
+    #  eg.: datetime can be used in a formula like this: ((today - datetime)/10) * basepriority) + basepriority
+    #  other factors such as user sentiment, salience (not yet implemented) can also influence priority
+    #   all this will be performed by the recall processes
+    ###
+    #  proxy core and extended core enter the list with priority 100 (basepriority / 5)
+    #  this information comes from the not yet implemented reflectiveMemory
+    
+    #############  See if some of the commitToMemory code should be moved here
+    
+
+    ###############################################################
+    ####################### General Memory ########################
+    ###############################################################
+
     self.episodicMemory = self.client.get_or_create_collection("episodicMemory",
                                                                embedding_function=NexusEmbeddingFunction())
     
@@ -39,6 +71,10 @@ class Memory(object):
                                                                    embedding_function=NexusEmbeddingFunction())
 
     ############################Study Private gpt to see the structure of documental memory
+    
+    ###############################################################
+    ##################### Documental Memory #######################
+    ###############################################################
     #raw text
     self.documentalMemoryLevel0 = self.client.get_or_create_collection("documentalMemoryLevel0",
                                                                        embedding_function=NexusEmbeddingFunction())
@@ -49,8 +85,10 @@ class Memory(object):
     self.documentalMemoryLevel2 = self.client.get_or_create_collection("documentalMemoryLevel2",
                                                                        embedding_function=NexusEmbeddingFunction())
     
+    ###############################################################
+    ################### Discriminatory Memories ###################
+    ###############################################################    
     
-    ####################Discriminatory Memories####################
     self.booleanDiscriminationMemory = self.client.get_or_create_collection("booleanDiscriminationMemory",
                                                                            embedding_function=NexusEmbeddingFunction())
     if(self.booleanDiscriminationMemory.count() == 0):
@@ -65,8 +103,8 @@ class Memory(object):
       ids = [f"id_{i}" for i in range(0, len(words))]
       self.closestWordMemory.add(documents=words, ids=ids)
       
-      
-  def CreateEpisodicMemory(self, conversationId, role, proxy, entities, 
+    
+  def CreateEpisodicMetadata(self, conversationId, role, proxy, entities, 
                            sentiment, tags, innerThoughts):
     timestamp = int(datetime.datetime.now())
     metadata={
@@ -75,24 +113,24 @@ class Memory(object):
             "proxy": proxy,
             "entities": entities,
             "sentiment": sentiment,
-            "tags": tags,
             "timestamp": timestamp,
             "innerThoughts": innerThoughts            
         }
-    
+    ########################################################################     call tag memory    
     return metadata    
   
-  def CreateSimpleMemory(self, conversationId, proxy, tags):
+  def CreateSimpleMetadata(self, conversationId, proxy, tags):
     timestamp = int(datetime.datetime.now())
     metadata=[
       {
        "conversationId": conversationId,
             "proxy": proxy,
-            "tags": tags,
             "timestamp": timestamp
       }
     ]
+    ########################################################################     call tag memory    
     return metadata
+  
 
   #I firmly refuse to use metadatas as a plural for metadata!!!!
   def CommitToMemory(self, memoryLevel, documents, metadata, ids):
@@ -100,7 +138,7 @@ class Memory(object):
                                           embedding_function=NexusEmbeddingFunction())
     memoryLevel.upsert(documents=documents, metadatas=metadata, ids=ids)
     
- ########################################################TEST TO SEE IF UPDATING TAGS WILL OVERWRITE OR APPEND THE TAGS
+ ######################################################## See below for updating metadata
   def UpdateMemoryMetadata(self, memoryLevel, query, metadata, maxRecords):
     memoryLevel = self.client.get_or_create_collection(memoryLevel,
                                           embedding_function=NexusEmbeddingFunction())
@@ -141,6 +179,36 @@ class Memory(object):
     merge=True  # Set merge=True to merge the new metadata with the existing metadata
     )
     
+  def GetRecollectionContext(self, maxSize=1024):
+    if(self.recollectionContext):
+      ctx = deque()
+      self.recollectionContext.sort(key = lambda x : x.priority)
+      ctx.extend(self.recollectionContext)
+      
+      while (sum(x.tokenSize for x in ctx) > maxSize):
+        ctxSize += ctx[0].tokenSize
+        ctx.pop()
+      
+      self.recollectionContext = list(ctx) 
+      return list(map(lambda x: x.text, self.recollectionContext)) 
+    else:
+      return []
+    
+  def GetRecollectionContextSize(self, maxSize=1024):
+    return len(self.GetRecollectionContext(maxSize=maxSize))
+    
+  def ResetRecollectionContext(self):
+    self.recollectionContext.clear()
+    self.recollectionQueries.clear()
+    
+  def AddToRecollectionContext(self, text, priority, query):
+    if((query not in self.recollectionQueries) and (text not in map(lambda x: x.text, self.recollectionContext))):
+      self.recollectionQueries.append(text)
+      tokenSize = globalNexus.GetTokenCount(text)    
+      self.recollectionContext.append(tuple(text=text, priority= priority, tokenSize= tokenSize))
+    
+    
+# tuple(text, priority: float,  tokenSize: int, contextID: str)       
     
     
 globalMemory = Memory()    

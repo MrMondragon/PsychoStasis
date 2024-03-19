@@ -3,7 +3,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path("..")))
 from Nexus import globalNexus
 from Memory import globalMemory
-from Proxy import Proxy
+import grammars
 
 class BaseCognitiveProcess(object):
   def __init__(self, **kwargs) -> None:
@@ -11,7 +11,6 @@ class BaseCognitiveProcess(object):
     self.Shard = None if "Shard" not in kwargs else kwargs["shard"]
     if(self.Shard):
       globalNexus.load_model(self.Shard)
-    self.Grammar = None
     self.Contexts = [] if "contexts" not in kwargs else kwargs["contexts"]
     self.SubProcesses = [] if "subProcesses" not in kwargs else kwargs["subProcesses"]
     self.Frequency = 1 if "frequency" not in kwargs else kwargs["frequency"]
@@ -19,33 +18,21 @@ class BaseCognitiveProcess(object):
     self.ContextCallback = self.ExpandContext
     self.ShouldRun = True if "shouldRun" not in kwargs else kwargs["shouldRun"]
     self.innerThoughts = False
-    self.proxy: Proxy = None
+    self.proxy= None
     self.priorty = 100 if "priority" not in kwargs else kwargs["priority"]
   
   def Run(self, proxy, **kwargs):
+    
     self.proxy = proxy
+    localContext = self.getLocalContext()
+    if(localContext == []):
+      return
+    
     if("innerThoughts" in kwargs):
       self.innerThoughts = kwargs["innerThoughts"]
-    if(self.ShouldRun(proxy)):
-      oldGrammar = ""
-      if(self.Grammar):
-        if(not self.Shard):
-          oldGrammar = globalNexus.CortexModel.params['grammar_string']
-          globalNexus.CortexModel.params['grammar_string'] = self.Grammar
-        else:
-          oldGrammar = globalNexus.ShardModels[self.Shard].params['grammar_string']
-          globalNexus.ShardModels[self.Shard].params['grammar_string'] = self.Grammar
-          
-      self._internalRun()  
-      self.ConditionalRunSubProcesses()  
-      
-      
-        
-                
-      if(not self.Shard):
-        globalNexus.CortexModel.params['grammar_string'] = oldGrammar
-      else:
-        globalNexus.ShardModels[self.Shard].params['grammar_string'] = oldGrammar
+    if(self.ShouldRun):
+      self._internalRun(localContext)   
+   
     self.proxy = None
       
   
@@ -101,7 +88,10 @@ class BaseCognitiveProcess(object):
       
   def getLocalContext(self):
     context = self.proxy.context if not self.innerThoughts else self.proxy.innerThoughts
-    if(len(context.message_history)%self.frequency == 0):
+    
+    interactions = context.proxyInteractionCounter[self.proxy.name]
+    
+    if(interactions%self.frequency == 0):
       freq = self.frequency * -1
       localContext = context.message_history[freq:]
       return localContext
@@ -110,8 +100,7 @@ class BaseCognitiveProcess(object):
     
   def judgeMessages(self, localContext, prompt, copySystem=True, deepCopy = False, 
                     resetCortex=True, start=None, end=None):
-    self.Grammar='''root ::= choice
-                    choice ::= "Yes"|"No"'''
+    self.Grammar = grammars.yesNo
     self.proxy.enterSubContext(deepCopy=deepCopy, resetCortex=resetCortex, 
                                copySystem=copySystem, start=start, end=end)
     self.proxy.context.message_history.extend(localContext)
@@ -127,7 +116,6 @@ class BaseCognitiveProcess(object):
       return True
     else:
       return False
-    
 
   def getClosestWord(self, sentence, top_k=1):
     query = globalMemory.closestWordMemory.query(query_texts=[sentence], 

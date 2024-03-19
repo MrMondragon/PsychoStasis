@@ -2,6 +2,7 @@ import glob
 import json
 import os
 import copy
+import shelve
 
 from Nexus import globalNexus
 from Context import Context
@@ -14,17 +15,25 @@ proxy_path = 'Proxies/'
 class Proxy:
   def __init__(self, name, **kwargs) -> None:
     self.name = name;
-    self.context = Context()
-    self.innerThoughts = Context()
-    
+
     # Get the current working directory
     cwd = os.getcwd()
+    
+    self.memoryPath = os.path.join(cwd, 'Memory\\contexts.shelve')
+    
+    with shelve.open(str(self.memoryPath)) as memory:
+      self.context = memory.get(name, Context())
+      self.context.sessionStart = None
+      self.innerThoughts = memory.get(name+".inner", Context())
+      self.innerThoughts.sessionStart = None
+    
     # Define the path to 'proxy' folder
     workPath = os.path.join(cwd, proxy_path)
     # Build the pattern for glob function
     pattern = f"{name}.proxy" if "pattern" not in kwargs else kwargs["pattern"]
     # Scan all '.config' files in 'models' directory
     file_list = glob.glob(os.path.join(workPath, pattern))
+    self.params = {}
     
     
     if file_list:  # If list is not empty
@@ -34,6 +43,7 @@ class Proxy:
         for key, value in data['params'].items():
           if key not in kwargs:
             kwargs[key] = value
+            self.params[key] = value
                     
     self.primer = "" if "primer" not in kwargs else kwargs["primer"];
     self.coreStatements = [] if "coreStatements" not in kwargs else kwargs["coreStatements"];
@@ -67,7 +77,7 @@ class Proxy:
       globalNexus.deactivate_model(self.model_name)
       globalNexus.CortexModel.params['LoRa'] = self.LoRa
   
-  def GenerateAnswer(self, prompt, shard=None, contextCallback = None, innerThoughts = False, role = "user",
+  def GenerateAnswer(self, prompt, shard=None, contextCallback = None, innerThoughts = False, grammar = "",
                      max_tokens = 0, recusiveLevel = 0):
       if(innerThoughts):
         context = self.innerThoughts
@@ -83,6 +93,7 @@ class Proxy:
         context.model = globalNexus.ShardModels[shard]
       else:
         context.model = globalNexus.CortexModel        
+        globalNexus.load_grammar(grammar)
 
       if(self.temperature != -1):
         globalNexus.CortexModel.params["temperature"] = self.temperature
@@ -109,26 +120,30 @@ class Proxy:
         print(f"Removing last answer and trying again. Reason: empty answer")
         if(recusiveLevel < 1):
           self.enterSubContext(deepCopy=True)
-          prompt = prompt + f" You gave me an empty answer! Please try again! Answer the following question:{prompt}\n"
+          prompt = prompt + f" You gave me an empty answer! Please try again! Answer the following: {prompt}\n"
           print(f"Trying to get a non empty message by asking the model explicitly. Reason: empty answer")          
           subContextAnswer = self.GenerateAnswer(prompt=prompt, shard=shard, contextCallback = contextCallback, max_tokens=max_tokens, recusiveLevel = recusiveLevel+1)
           self.exitSubContext()          
           self.context.last_answer = subContextAnswer
       
       context.model = oldModel
-      
+      self.commitContext()
       return context.last_answer
   
   def GenerateSystem(self, innerThoughts= False):
     sysMessage = []
-    sysMessage.append(f"You are {self.name}, {self.primer}")
+    
+    pronoun = "I" if "person" in self.params and self.params["person"] == "1st" else "you"
+    toBe = "am" if "person" in self.params and self.params["person"] == "1st" else "are"
+
+    sysMessage.append(f"{pronoun} {toBe} {self.name}, {self.primer}")
     if(self.collective != None):
-      sysMessage.append(f"You are part of the {self.collective.name} collective.")
+      sysMessage.append(f"{pronoun} {toBe} part of the {self.collective.name} collective.")
       sysMessage.append(self.collective.primer)
     if(innerThoughts):
       sysMessage.append(self.innerPersona)
     else:
-      sysMessage.append("You should guide your answers by the following:")
+      sysMessage.append(f"{pronoun} believe, above all, in the following:")
       sysMessage.extend(self.coreStatements)
       if(self.collective != None):
         sysMessage.extend(self.collective.coreStatements)      
@@ -140,6 +155,7 @@ class Proxy:
       sysMessage = sysMessage.replace("{user_name}", self.context.userName)
     if("{user}" in sysMessage):
       sysMessage = sysMessage.replace("{user}", self.context.userName)
+   
     
     return sysMessage
   
@@ -165,6 +181,8 @@ class Proxy:
     if(self.shouldGenerate):#allows for interruption after messageReceived
       answer = self.GenerateAnswer(prompt=message)
       cognitiveSystem.RunProcesses(proxy=self, context="afterMessageReceived")
+    else:
+      answer = ""
     
     self.context.messageSender = None
     self.context.senderRole = None
@@ -221,6 +239,18 @@ class Proxy:
       else:
         self.context = context.parentContext
       return context
+  
+  def commitContext(self):
+    with shelve.open(str(self.memoryPath)) as memory:
+      memory[self.name] = self.context 
+      memory[self.name+".inner"] = self.innerThoughts 
+      print("context commited")
+      
+  def clearContext(self):
+    self.context = Context()
+    self.innerThoughts = Context()
+    self.commitContext()
+    
   
   def deactivateCortex(self):
     globalNexus.CortexModel.deactivate()
