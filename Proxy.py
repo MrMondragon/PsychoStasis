@@ -24,8 +24,11 @@ class Proxy:
     with shelve.open(str(self.memoryPath)) as memory:
       self.context = memory.get(name, Context())
       self.context.sessionStart = None
+      self.context.proxyInteractionCounter[name] = 0
       self.innerThoughts = memory.get(name+".inner", Context())
       self.innerThoughts.sessionStart = None
+      self.innerThoughts.proxyInteractionCounter[name] = 0
+      
     
     # Define the path to 'proxy' folder
     workPath = os.path.join(cwd, proxy_path)

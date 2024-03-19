@@ -89,10 +89,13 @@ class BaseCognitiveProcess(object):
   def getLocalContext(self):
     context = self.proxy.context if not self.innerThoughts else self.proxy.innerThoughts
     
-    interactions = context.proxyInteractionCounter[self.proxy.name]
+    if(self.Frequency <= 0):
+      return context.message_history
     
-    if(interactions%self.frequency == 0):
-      freq = self.frequency * -1
+    interactions = context.proxyInteractionCounter[self.proxy.name]    
+    
+    if(interactions%self.Frequency == 0):
+      freq = self.Frequency * -1
       localContext = context.message_history[freq:]
       return localContext
     else:
