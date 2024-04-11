@@ -227,11 +227,11 @@ class Memory(object):
   def ReprioritizeRecollectionContext(self, query):
     pass
   
-  def Recall(self, query, clear=False, RecollectionLevel = RecollectionLevel.Factual):
+  def Recall(self, query, clear=False, RecollectionLevel = RecollectionLevel.Abstract):
     if(clear):
       self.ResetRecollectionContext()
       
 ###############################################################
 ################## Global Memory Object #######################
 ###############################################################
-globalMemory = Memory()    
+longTermMemory = Memory()    

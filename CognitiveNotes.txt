@@ -13,7 +13,7 @@
       if(self.DecisoryStatement):
         prompt = f"You now have the option to {self.DecisoryStatement}. Is it applicable?  Answer with yes or no only."
         decision = self.proxy.GenerateAnswer(prompt= prompt, shard=self.Shard, contextCallback = self.contextCallback)
-        result = globalMemory.sentenceToBoolean(decision)
+        result = longTermMemory.sentenceToBoolean(decision)
     
       if(self.proxy.context.verbose):
         print(f"Result = {result}")   

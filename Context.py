@@ -4,7 +4,7 @@ import math
 import json
 import datetime
 from Nexus import globalNexus
-from Memory import globalMemory
+from LongTermMemory import longTermMemory
 from ContextEntry import ContextEntry
 from typing import List
   
@@ -40,7 +40,7 @@ class Context(object):
     
     if(totalTokens > self.windowSize):
       tokenCount = 0
-      tokenCount += globalMemory.GetRecollectionContextSize(maxSize=self.windowSize//2)
+      tokenCount += longTermMemory.GetRecollectionContextSize(maxSize=self.windowSize//2)
       
       if(self.systemMessage):
         tokenCount += self.systemMessage.tokensSize
@@ -78,8 +78,8 @@ class Context(object):
     if(prompt):
       self.AppendMessage(prompt, role="user", roleName = self.userName)
     
-    if(globalMemory.GetRecollectionContextSize() > 0):
-      recollection = globalMemory.GetRecollectionContext(maxSize=self.windowSize/2)
+    if(longTermMemory.GetRecollectionContextSize() > 0):
+      recollection = longTermMemory.GetRecollectionContext(maxSize=self.windowSize/2)
       relevantContext.extend(list(map(lambda x: ContextEntry(role="system", content=x, roleName="system", context=self), recollection)))
     
     if(contextCallback):

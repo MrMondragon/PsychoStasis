@@ -4,15 +4,15 @@ import grammars
 sys.path.insert(0, str(Path("..")))
 sys.path.insert(0, str(Path(".")))
 import uuid
-from Memory import globalMemory
+from LongTermMemory import longTermMemory
 from Nexus import globalNexus
 from _BaseCognitiveProcess import BaseCognitiveProcess
 
-class CommitToFactualMemory(BaseCognitiveProcess):
+class CommitToAbstractMemory(BaseCognitiveProcess):
   def __init__(self, **kwargs) -> None:
     super().__init__(**kwargs)
     self.shouldRun = True
-    self.Name = "CommitToFactualMemory"
+    self.Name = "CommitToAbstractMemory"
     self.contexts = ["afterMessageReceived"] if "contexts" not in kwargs else kwargs["contexts"]
     self.frequency = -1 if "frequency" not in kwargs else kwargs["frequency"]
     self.shouldRun = True if "shouldRun" not in kwargs else kwargs["shouldRun"]
@@ -25,7 +25,7 @@ class CommitToFactualMemory(BaseCognitiveProcess):
     conversationId=str(self.proxy.context.contextID)
     
     #get all summaries that don't have parents
-    summaries, summaryIds = globalMemory.GetUnparentedMemories(memoryLevel="factualMemory")
+    summaries, summaryIds = longTermMemory.GetUnparentedMemories(memoryLevel="AbstractMemory")
 
     #generate N facts about the collection of summaries
     self.proxy.enterSubContext(copySystem=True)
@@ -50,7 +50,7 @@ class CommitToFactualMemory(BaseCognitiveProcess):
       metadata = []      
       for fact in facts:
         #get the closest fact to the fact at hand
-        queryResult = globalMemory.factualMemory.query(query_texts=fact, n_results=1,
+        queryResult = longTermMemory.AbstractMemory.query(query_texts=fact, n_results=1,
                                  where={"conversationId": conversationId})
         
         #if no facts were found, set the distance to -1
@@ -62,7 +62,7 @@ class CommitToFactualMemory(BaseCognitiveProcess):
         
         #if no distance was found or the distance is higher than the threshold, add the fact to the memory
         if((distance >= 1.2) or (distance == -1)):
-          data = globalMemory.CreateSimpleMetadata(conversationId=conversationId,
+          data = longTermMemory.CreateSimpleMetadata(conversationId=conversationId,
                                                   proxy=self.proxy.name)
           data["summaryIds"] = summaryIds
           documents.append(fact)
@@ -79,9 +79,9 @@ class CommitToFactualMemory(BaseCognitiveProcess):
       
       parentCluster = "|".join(ids)
       
-      globalMemory.CommitToMemory(memoryLevel="factualMemory", documents=documents, metadata=metadata, ids=ids)
-      globalMemory.EntityfyMemory(conversationID="|".join(ids), entities=entities)
-      globalMemory.AssignParentsToCluster(memoryLevel="factualMemory", clusterId=parentCluster)
+      longTermMemory.CommitToMemory(memoryLevel="AbstractMemory", documents=documents, metadata=metadata, ids=ids)
+      longTermMemory.EntityfyMemory(conversationID="|".join(ids), entities=entities)
+      longTermMemory.AssignParentsToCluster(memoryLevel="AbstractMemory", clusterId=parentCluster)
       globalNexus.EndShardBatch("Embeddings.Embeddings") 
       
     return facts

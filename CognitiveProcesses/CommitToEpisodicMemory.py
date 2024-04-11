@@ -3,7 +3,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path("..")))
 sys.path.insert(0, str(Path(".")))
 import uuid
-from Memory import globalMemory
+from LongTermMemory import longTermMemory
 from MemoryTypes import MemoryLevel
 from Nexus import globalNexus
 from _BaseCognitiveProcess import BaseCognitiveProcess
@@ -41,7 +41,7 @@ class CommitToEpisodicMemory(BaseCognitiveProcess):
       
       print(f"Next: {nxt}, Previous: {previous}")
       
-      data = globalMemory.CreateEpisodicMetadata(conversationId=str(conversationId),
+      data = longTermMemory.CreateEpisodicMetadata(conversationId=str(conversationId),
                                                 role=role,
                                                 proxy = self.proxy.name,
                                                 sentiment=sentiment,
@@ -52,7 +52,7 @@ class CommitToEpisodicMemory(BaseCognitiveProcess):
       ids.append(message["id"])
       metadata.append(data)
               
-    globalMemory.CommitToMemory(proxy=self.proxy, memoryLevel=MemoryLevel.Episodic, documents=documents, metadata=metadata, ids=ids)
+    longTermMemory.CommitToMemory(proxy=self.proxy, memoryLevel=MemoryLevel.Episodic, documents=documents, metadata=metadata, ids=ids)
     return localContext
       
       

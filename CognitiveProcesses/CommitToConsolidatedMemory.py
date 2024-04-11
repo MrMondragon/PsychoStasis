@@ -3,7 +3,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path("..")))
 sys.path.insert(0, str(Path(".")))
 import uuid
-from Memory import globalMemory
+from LongTermMemory import longTermMemory
 from MemoryTypes import MemoryLevel
 from Nexus import globalNexus
 from _BaseCognitiveProcess import BaseCognitiveProcess
@@ -28,10 +28,10 @@ class CommitToConsolidatedMemory(BaseCognitiveProcess):
     summary = globalNexus.summarize(texContext)
     entities = globalNexus.getNER(summary)
     
-    data = globalMemory.CreateSimpleMetadata(conversationId=conversationId,
+    data = longTermMemory.CreateSimpleMetadata(conversationId=conversationId,
                                             proxy=self.proxy.name)
-    globalMemory.CommitToMemory(proxy=self.proxy, memoryLevel=MemoryLevel.Summary, documents=[summary], metadata=[data], ids=[id])
-    globalMemory.EntityfyMemory(proxy=self.proxy, conversationID=id, entities=entities)
+    longTermMemory.CommitToMemory(proxy=self.proxy, memoryLevel=MemoryLevel.Summary, documents=[summary], metadata=[data], ids=[id])
+    longTermMemory.EntityfyMemory(proxy=self.proxy, conversationID=id, entities=entities)
     
     return summary
 

@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path("..")))
 from Nexus import globalNexus
-from Memory import globalMemory
+from LongTermMemory import longTermMemory
 import grammars
 
 class BaseCognitiveProcess(object):
@@ -72,7 +72,7 @@ class BaseCognitiveProcess(object):
     return boolAnswer
   
   def sentenceToBoolean(self, choice):
-    query = globalMemory.booleanDiscriminationMemory.query(query_texts=[choice], n_results=1, where=[], include=[])
+    query = longTermMemory.booleanDiscriminationMemory.query(query_texts=[choice], n_results=1, where=[], include=[])
     id = query["ids"][0][0]
     if(id == "1"):
       return True
@@ -80,7 +80,7 @@ class BaseCognitiveProcess(object):
       return False
 
   def getClosestWord(self, sentence, top_k=1):
-    query = globalMemory.closestWordMemory.query(query_texts=[sentence], 
+    query = longTermMemory.closestWordMemory.query(query_texts=[sentence], 
                                          n_results=top_k, where=[], include=["documents"])
     word = query["documents"][0]
     return word    

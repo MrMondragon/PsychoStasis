@@ -57,13 +57,13 @@ distance based information is inserted with the formula
       #expand hierarchicalMemory with episodicMemory
     #run query against consolidatedMemory
     #expand results with episodicMemory
-    #calc priority based on discreet sentiment, distance, recency and source (factual, consolidated, or episodic)
+    #calc priority based on discreet sentiment, distance, recency and source (Abstract, consolidated, or episodic)
     #there will need to be a cogProc to consolidate memory in hierarchy
       #each entry on hierarchical memory whill have a parent and a level property on metadata
       #there will be a cogProc to get entries without parents, consolidate them and add the parent to the entry
     #this process will be akin to the one on doc ingestion and chunking process
     #developing the ingestion method first will generate data to be recollected
-    #a pure factual recollection available to the proxy, with entry priority being recalculated according to the last query - freq 7, 11, 13 or 17
+    #a pure Abstract recollection available to the proxy, with entry priority being recalculated according to the last query - freq 7, 11, 13 or 17
     #this method should return a list of textual results sorted by priority
     
     
@@ -77,11 +77,11 @@ distance based information is inserted with the formula
       # Implmement the ingestion process
       # Implement the recollection process
       # Implement Authotritative Commands for both
-      # Implement autonomous shallow factual recollection
+      # Implement autonomous shallow Abstract recollection
       # Refactor inner thoughts out
       
     ### To be considered:
-      # episodic/textual memory => consolidated memory => factual memory => documental memory
+      # episodic/textual memory => consolidated memory => Abstract memory => documental memory
       # sentiment memory ~ entity memory
     
     ### Entity memory needs to add and deduplicate to the entryIds

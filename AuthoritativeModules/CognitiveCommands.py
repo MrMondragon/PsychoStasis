@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path("..")))
 from CognitiveSystem import cognitiveSystem
-from Memory import globalMemory
+from LongTermMemory import longTermMemory
 import re
 from _Command import _Command
 
@@ -16,7 +16,7 @@ class CognitiveCommands(object):
     authoritativeSystem.Commands[r"/reflect"] = _Command(func = self.reflect, description = "reflect upon the conversation and add to extended core")
     authoritativeSystem.Commands[r"/recall"] = _Command(func = self.recall, description = "recall a specific subject and add to extended context")
     authoritativeSystem.Commands[r"/resetRecall"] = _Command(func = self.resetRecall, description = "reset extended context")
-    authoritativeSystem.Commands[r"/understand"] = _Command(func = self.understand, description = "force a fact to the factual memory")
+    authoritativeSystem.Commands[r"/understand"] = _Command(func = self.understand, description = "force a fact to the Abstract memory")
     authoritativeSystem.Commands[r"/tag (\w|_)+"] = _Command(func = self.tag, description = "tag the conversation with a given subject")
     
   def system2(self, proxy, prompt, command):
@@ -46,12 +46,12 @@ class CognitiveCommands(object):
   
   def understand(self, proxy, prompt, command):
     prompt = prompt.replace(command, "")
-    globalMemory.Understand(proxy, prompt)
+    longTermMemory.Understand(proxy, prompt)
     return ""
 
   
   def tag(self, proxy, prompt, command):
     prompt = prompt.replace(command, "")
     tag = command.replace("/tag ", "")
-    globalMemory.TagMemory(proxy.context.ContextID, tag)
+    longTermMemory.TagMemory(proxy.context.ContextID, tag)
     return prompt
