@@ -14,7 +14,7 @@ negativeStr = " ".join(negative)
 
 basePriority = 500
 
-class Memory(object):
+class LongTermMemory(object):
   def __init__(self):
     self.path = './Memory/'
     self.persistent = False
@@ -47,15 +47,12 @@ class Memory(object):
   ###############################################################
   ################### Specialized Metadata ######################
   ###############################################################     
-  def CreateEpisodicMetadata(self, conversationId, role, proxy,  
-                           sentiment, nuancedSentiment, previous, next):
+  def CreateEpisodicMetadata(self, conversationId, role, proxy,  previous, next):
     timestamp = int(time.mktime(datetime.datetime.now().timetuple()))
     metadata={
           "conversationId": str(conversationId), 
           "role": role,
           "proxy": proxy,
-          "sentiment": sentiment,
-          "nuancedSentiment": nuancedSentiment,
           "timestamp": timestamp,
           "previous": previous,
           "next": next,
@@ -164,19 +161,19 @@ class Memory(object):
       
   def GetUnparentedMemories(self, proxy, memoryLevel):
     query = self.QueryAll(proxy = proxy, memoryLevel=memoryLevel, where={"parent": ""}, queryTexts=[""])
-    documents = "\n".join(list(map(lambda x: x["documents"][0], query)))
-    ids = "|".join(list(map(lambda x: x["ids"][0], query)))
+    documents = "\n".join(query["documents"][0])
+    ids = "|".join(query["ids"][0])
     return documents, ids
   
   
   def AssignParentToMemories(self, proxy, memoryLevel, clusterId):
     query = self.QueryAll(proxy = proxy, memoryLevel=memoryLevel, where={"parent": ""}, queryTexts=[""])
-
-    for item in query:
-      item["metadatas"][0]["parent"] = clusterId
-      
     memory = self.AccessMemoryLevel(memoryLevel=memoryLevel, proxy=proxy)
-    memory.update(ids=[item["ids"][0]], metadatas=[item["metadatas"][0]])
+
+    for i in range(len(query["ids"][0])):
+      metadata = query["metadatas"][0][i]
+      metadata["parent"] = clusterId      
+      memory.update(ids=query["ids"][0], metadatas=query["metadatas"][0])
     
   def TabulaRasa(self, proxy):
     levels = [x.name for x in MemoryLevel.__members__.values()]
@@ -235,4 +232,4 @@ class Memory(object):
 ###############################################################
 ################## Long Term Memory Object ####################
 ###############################################################
-longTermMemory = Memory()    
+longTermMemory = LongTermMemory()    

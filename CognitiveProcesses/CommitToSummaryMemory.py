@@ -8,12 +8,12 @@ from MemoryTypes import MemoryLevel
 from Nexus import globalNexus
 from _BaseCognitiveProcess import BaseCognitiveProcess
 
-class CommitToConsolidatedMemory(BaseCognitiveProcess):
+class CommitToSummaryMemory(BaseCognitiveProcess):
   def __init__(self, **kwargs) -> None:
     super().__init__(**kwargs)
-    self.Name = "CommitToConsolidatedMemory"
+    self.Name = "CommitToSummaryMemory"
     self.contexts = ["afterMessageReceived"] if "contexts" not in kwargs else kwargs["contexts"]
-    self.frequency = -1 if "frequency" not in kwargs else kwargs["frequency"]
+    self.frequency = 0 if "frequency" not in kwargs else kwargs["frequency"]
     self.shouldRun = True if "shouldRun" not in kwargs else kwargs["shouldRun"]
     self.common = True
     self.priority = 110
@@ -21,17 +21,19 @@ class CommitToConsolidatedMemory(BaseCognitiveProcess):
     
   def _internalRun(self, localContext):
     super()._internalRun()
-    texContext = "\n".join([message["content"] for message in localContext])
+    globalNexus.BeginShardBatch("Embeddings.Embeddings")
+    
+    txtContent, ids = longTermMemory.GetUnparentedMemories(memoryLevel=MemoryLevel.Episodic, proxy=self.proxy)
+    print(txtContent)
     conversationId=str(self.proxy.context.contextID)
-    id=str(uuid.uuid4())
+    id=f"sum-{uuid.uuid4()}"
     
-    summary = globalNexus.summarize(texContext)
-    entities = globalNexus.getNER(summary)
-    
-    data = longTermMemory.CreateSimpleMetadata(conversationId=conversationId,
-                                            proxy=self.proxy.name)
+    summary = globalNexus.summarize(txtContent)
+     
+    data = longTermMemory.CreateSimpleMetadata(conversationId=conversationId, proxy=self.proxy.name)
     longTermMemory.CommitToMemory(proxy=self.proxy, memoryLevel=MemoryLevel.Summary, documents=[summary], metadata=[data], ids=[id])
-    longTermMemory.EntityfyMemory(proxy=self.proxy, conversationID=id, entities=entities)
+    longTermMemory.AssignParentToMemories(proxy=self.proxy, memoryLevel=MemoryLevel.Episodic, clusterId=id)
+    globalNexus.EndShardBatch("Embeddings.Embeddings")
     
     return summary
 

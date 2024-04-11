@@ -23,9 +23,7 @@ class CommitToEpisodicMemory(BaseCognitiveProcess):
     
   def _internalRun(self, localContext):
     super()._internalRun()
-    texContext = "\n".join([message.content for message in localContext])
-    sentiment = globalNexus.getSentiment(texContext, nuanced=False)
-    nuancedSentiment = globalNexus.getSentiment(texContext, nuanced=True)
+    globalNexus.BeginShardBatch("Embeddings.Embeddings")
     conversationId=self.proxy.context.contextID
     documents = []
     ids = []
@@ -39,13 +37,10 @@ class CommitToEpisodicMemory(BaseCognitiveProcess):
       previous = str(message.previous.id) if message.previous else ""
       nxt = str(message.next.id) if message.next else ""       
       
-      print(f"Next: {nxt}, Previous: {previous}")
       
       data = longTermMemory.CreateEpisodicMetadata(conversationId=str(conversationId),
                                                 role=role,
                                                 proxy = self.proxy.name,
-                                                sentiment=sentiment,
-                                                nuancedSentiment=nuancedSentiment,
                                                 next=nxt,
                                                 previous=previous)
       documents.append(message.content)
@@ -53,6 +48,7 @@ class CommitToEpisodicMemory(BaseCognitiveProcess):
       metadata.append(data)
               
     longTermMemory.CommitToMemory(proxy=self.proxy, memoryLevel=MemoryLevel.Episodic, documents=documents, metadata=metadata, ids=ids)
-    return localContext
+    globalNexus.EndShardBatch("Embeddings.Embeddings")
+    return documents
       
       

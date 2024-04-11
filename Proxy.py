@@ -115,7 +115,9 @@ class Proxy:
       self.context.AppendAnswer(role=self.name, answer=answer)
       cognitiveSystem.RunProcesses(proxy=self, context="afterGenerateAnswer")
       
-      self.commitContext()
+      if(self.context.parentContext == None):
+        self.commitContext()
+      
       return self.context.lastAnswerObj
 
   
@@ -180,7 +182,7 @@ class Proxy:
                       copyContextualInfo =False, 
                       innerThoughts=False, resetCortex=False, interactions: List[ContextEntry]=None):
     
-    newContext = Context()
+    newContext = Context(self)
     context = self.context
     print(f"Entering context {newContext.contextID} from context {context.contextID}")
     if(resetCortex):
@@ -223,10 +225,16 @@ class Proxy:
   
   
   def commitContext(self):
+    self.context.parentContext = None
     self.context.messageHistory = self.context.filteredHistory()
+    model = self.context.model
+    self.context.model = None
+    self.context.proxy = None
     with shelve.open(str(self.memoryPath)) as memory:
       memory[self.name] = self.context 
       print("context commited")
+    self.context.model = model
+    self.context.proxy = self
       
       
   def clearContext(self):

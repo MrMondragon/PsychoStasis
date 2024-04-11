@@ -55,7 +55,7 @@ distance based information is inserted with the formula
     #run query against hierarchicalMemory and deduplicate the results
       #expand hierarchicalMemory 
       #expand hierarchicalMemory with episodicMemory
-    #run query against consolidatedMemory
+    #run query against SummaryMemory
     #expand results with episodicMemory
     #calc priority based on discreet sentiment, distance, recency and source (Abstract, consolidated, or episodic)
     #there will need to be a cogProc to consolidate memory in hierarchy
