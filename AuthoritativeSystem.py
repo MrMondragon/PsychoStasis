@@ -11,6 +11,12 @@ class AuthoritativeSystem(DynamicSystem):
     
   def Run(self, proxy, prompt, role):
     if(re.match(r"\W", prompt)): #check if prompt is a command. Commands must ALWAYS start with \W, non word char
+      if(prompt == "/help"):
+        result = list(map(lambda x: x[0] + "-" + x[1].description, self.Commands.items()))
+        result = "\n".join(result)
+        proxy.context.AppendMessage(message=result, role="ignore", roleName="ignore")
+        return ""
+      
       expressions = self.Commands.keys()
       for expression in expressions:
         command = re.match(expression, prompt)

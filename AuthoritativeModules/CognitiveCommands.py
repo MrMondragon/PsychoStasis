@@ -53,5 +53,5 @@ class CognitiveCommands(object):
   def tag(self, proxy, prompt, command):
     prompt = prompt.replace(command, "")
     tag = command.replace("/tag ", "")
-    globalMemory.TagMemory(proxy, tag)
+    globalMemory.TagMemory(proxy.context.ContextID, tag)
     return prompt

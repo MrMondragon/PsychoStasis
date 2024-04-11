@@ -24,11 +24,14 @@ class Nexus(object):
         self.CortexModel:  Base_model = None
         self.CortexModel_name: str = None
         self.ShardModels: dict[str, Base_model] = {}
+        self.ShardBatch: dict[str,bool] = {}
         self.load_model("Embeddings.Embeddings")
         self.load_model("Summarizer.Summarizer")
         self.load_model("NER.NER")
         self.load_model("SentimentNuanced.Sentiment")
         self.load_model("SentimentDiscreet.Sentiment")
+        for shard in self.ShardModels:
+            self.ShardBatch[shard] = False
         
     model_mapping = {
         'Causal' : CausalLM,
@@ -117,13 +120,19 @@ class Nexus(object):
         print(f"performing inference with {self.CortexModel_name}")
         self.CortexModel.activate()
         return self.CortexModel.generate(localContext, callback, max_tokens=max_tokens)
+
+    def BeginShardBatch(self, model_name:str):
+        self.ShardBatch[model_name] = True
+        
+    def EndShardBatch(self, model_name:str):
+        self.ShardBatch[model_name] = False
+        self.deactivate_model(model_name)
     
     def generate_completion_shard(self, localContext, callback = None, model_name:str = None):
         print(f"performing inference with {model_name}")
         self.activate_model(model_name)
         result = self.ShardModels[model_name].generate(localContext, callback)
-        print(f"Keep active:{self.ShardModels[model_name].keepActive}")
-        if(not self.ShardModels[model_name].keepActive):
+        if(not self.ShardBatch[model_name]):
             self.deactivate_model(model_name)
         return result
     
@@ -139,7 +148,8 @@ class Nexus(object):
     def compute_embeddings(self, prompts):
         self.activate_model("Embeddings.Embeddings")
         result = self.ShardModels["Embeddings.Embeddings"].compute_embeddings(prompts)
-        self.deactivate_model("Embeddings.Embeddings")
+        if(not self.ShardBatch["Embeddings.Embeddings"]):
+            self.deactivate_model("Embeddings.Embeddings")
         return result
     
     def compute_similarity(self, prompt1 : str, prompt2 : str):
@@ -147,48 +157,73 @@ class Nexus(object):
         a = self.ShardModels["Embeddings.Embeddings"].compute_embeddings(prompt1)
         b = self.ShardModels["Embeddings.Embeddings"].compute_embeddings(prompt2)
         result = self.ShardModels["Embeddings.Embeddings"].get_similarity(a, b)
-        self.deactivate_model("Embeddings.Embeddings")
+        if(not self.ShardBatch["Embeddings.Embeddings"]):
+            self.deactivate_model("Embeddings.Embeddings")
         return result
     
     def compute_dotscore(self, prompt1, prompt2):
         self.activate_model("Embeddings.Embeddings")
         a = self.ShardModels["Embeddings.Embeddings"].compute_embeddings(prompt1)
         b = self.ShardModels["Embeddings.Embeddings"].compute_embeddings(prompt2)
-        self.deactivate_model("Embeddings.Embeddings")
+        if(not self.ShardBatch["Embeddings.Embeddings"]):
+            self.deactivate_model("Embeddings.Embeddings")
         result = self.ShardModels["Embeddings.Embeddings"].get_dot_score(a, b)
         return result
     
     def decode_embeddings(self, embeddings):
         self.activate_model("Embeddings.Embeddings")
         result = self.ShardModels["Embeddings.Embeddings"].decode_embeddings(embeddings)
-        self.deactivate_model("Embeddings.Embeddings")
+        if(not self.ShardBatch["Embeddings.Embeddings"]):
+            self.deactivate_model("Embeddings.Embeddings")
         return result
 
     def summarize(self, prompt):
         self.activate_model("Summarizer.Summarizer")
         result = self.ShardModels["Summarizer.Summarizer"].generate(prompt)
-        self.deactivate_model("Summarizer.Summarizer")
+        if(not self.ShardBatch["Embeddings.Embeddings"]):
+            self.deactivate_model("Embeddings.Embeddings")
         return result
     
     def getNER(self, prompt):
         self.activate_model("NER.NER")
         result = self.ShardModels["NER.NER"].generate(prompt)
-        self.deactivate_model("NER.NER")
+        if(not self.ShardBatch["NER.NER"]):
+            self.deactivate_model("NER.NER")
         return result
+    
+    def tokenizeAndTruncate_text(self, text, modelName, size):
+        tokenizer = self.ShardModels[modelName].tokenizer
+        # Tokenize the input text
+        tokenized_text = tokenizer(text, return_tensors='pt', max_length=size, truncation=True)
+        # Truncate the tokenized text if needed
+        if tokenized_text['input_ids'].shape[1] > size:
+            tokenized_text['input_ids'] = tokenized_text['input_ids'][:, :size]
+            tokenized_text['attention_mask'] = tokenized_text['attention_mask'][:, :size]
+        # Convert token IDs back to text
+        decoded_text = tokenizer.decode(tokenized_text['input_ids'][0], skip_special_tokens=True)
+        return decoded_text
     
     def getSentiment(self, prompt, nuanced=True):
         if(nuanced):
             self.activate_model("SentimentNuanced.Sentiment")
+            prompt = self.tokenizeAndTruncate_text(prompt, "SentimentNuanced.Sentiment", 512)
             result = self.ShardModels["SentimentNuanced.Sentiment"].generate(prompt)
-            self.deactivate_model("SentimentNuanced.Sentiment")
+            result = "|".join(result)
         else:
             self.activate_model("SentimentDiscreet.Sentiment")
+            prompt = self.tokenizeAndTruncate_text(prompt, "SentimentDiscreet.Sentiment", 512)
             result = self.ShardModels["SentimentDiscreet.Sentiment"].generate(prompt)
-            self.deactivate_model("SentimentDiscreet.Sentiment")
+            if(len(result) == 2):
+                result = "neutral"
+            else:
+                result = result[0]
         
         return result
     
-
+    
+    def CalcTokenSize(self, text):
+        encodedText = self.CortexModel.encode(text)
+        return len(encodedText), encodedText
         
     
 globalNexus = Nexus()

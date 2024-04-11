@@ -5,17 +5,20 @@ import json
 import datetime
 from Nexus import globalNexus
 from Memory import globalMemory
+from ContextEntry import ContextEntry
+from typing import List
   
 class Context(object):
   def __init__(self) -> None:
     self.parentContext = None
     self.contextID = uuid.uuid4()
-    self.message_history = []
+    self.messageHistory : List[ContextEntry] = []
     self.systemMessage = None
-    self.window_size = 3072 - 512 #typical context - typical max tokens
-    self.proxyInteractionCounter = {}
-    self.last_message = None    
-    self.last_answer = None
+    self.windowSize = 3072 - 512 #typical context - typical max tokens
+    self.lastMessageTxt = None    
+    self.lastMessageObj = None
+    self.lastAnswerTxt = None
+    self.lastAnswerObj = None
     self.userName = "Ergo"
     self.verbose = False
     self.collective = None
@@ -25,91 +28,64 @@ class Context(object):
     self.model = None
     self.sessionStart = None
   
-  def getContextWindow(self, prompt):
-    totalTokens = self.get_token_count(prompt=prompt)
-    if(totalTokens > self.window_size):
-      window = []
+  
+  def filteredHistory(self):
+    return list(filter(lambda x: x.role != "ignore", self.messageHistory))
+  
+  def getContextWindow(self):
+    totalTokens = self.lastMessageObj.tokensSize
+    history = self.filteredHistory()
+    
+    window = []
+    
+    if(totalTokens > self.windowSize):
       tokenCount = 0
-      
-      tokenCount += globalMemory.GetRecollectionContextSize(maxSize=self.window_size//2)
+      tokenCount += globalMemory.GetRecollectionContextSize(maxSize=self.windowSize//2)
       
       if(self.systemMessage):
-        tokenCount += self.get_token_size(self.systemMessage)
-        
-      tokenCount += self.get_token_size(prompt)
+        tokenCount += self.systemMessage.tokensSize
       
-      if(len(self.message_history) > 0):
-        if(self.sessionStart == None):
-          tokenCount += self.message_history[0]["tokens"]
-          window.append(self.message_history[0])
-        else:
-          tokenCount += self.sessionStart["tokens"]  
-          window.append(self.sessionStart)
+      tokenCount += self.lastMessageObj.tokensSize
+      
+      if(len(history) > 0):
+        tokenCount += history[0].tokensSize
+        window.append(history[0])
         
-        if(len(self.message_history) > 1):
+        if(len(history) > 1):
           revWindow = []
           
-          for message in reversed(self.message_history[1:]):
-            tokenCount += message["tokens"]
-            if(tokenCount <= self.window_size):
+          for message in reversed(history[1:]):
+            tokenCount += message.tokensSize
+            if(tokenCount <= self.windowSize):
               revWindow.append(message)
             else:
               break
                         
           window.extend(reversed(revWindow))
         
-      windowList = []
-      for message in window:
-        windowList.append(self.convert_to_chat_format(message, includeTokens=False))
     else:
-      windowList = []
-      for message in self.message_history:
-        windowList.append(self.convert_to_chat_format(message, includeTokens=False))
+      window.extend(history)
     
-    return windowList
+    return window
     
-  def get_token_size(self, message):
-    if(self.model != None):
-      return len(self.model.encode(message))
-    else:
-      return len(globalNexus.CortexModel.encode(message))
   
-  def get_token_count(self, prompt):
-    tokenCount = 0
-    if(len(self.message_history) > 0):
-      for message in self.message_history:
-        tokenCount += int(message["tokens"])      
-
-    if(self.systemMessage):
-      tokenCount += self.get_token_size(self.systemMessage)
-      
-    tokenCount += self.get_token_size(prompt)
-    return tokenCount
-    
-  def convert_to_chat_format(self, message, includeTokens=True):
-    if(includeTokens):
-      return {"role":message["role"], "content":message["content"], "tokens":message["tokens"]}
-    else:
-      return {"role":message["role"], "content":message["content"]}
-  
-  def get_relevant_context(self, prompt, contextCallback=None, start = None, end = None):
+  def getRelevantContext(self, prompt, contextCallback=None, start = None, end = None):
     relevantContext = []
-    if(self.systemMessage):
-      relevantContext.append({"role":"system", "content":self.systemMessage})
 
+    if(self.systemMessage):
+      relevantContext.append(self.systemMessage)
+      
+    if(prompt):
+      self.AppendMessage(prompt, role="user", roleName = self.userName)
+    
     if(globalMemory.GetRecollectionContextSize() > 0):
-      recollection = globalMemory.GetRecollectionContext(maxSize=self.window_size/2)
-      relevantContext.extend(map(lambda x: {"role":"system", "content":x}, recollection))
+      recollection = globalMemory.GetRecollectionContext(maxSize=self.windowSize/2)
+      relevantContext.extend(list(map(lambda x: ContextEntry(role="system", content=x, roleName="system", context=self), recollection)))
     
     if(contextCallback):
       relevantContext.extend(contextCallback())
-
-    if(prompt):
-      promptMessage = self.append_message(prompt, role="user", roleName = self.userName)
-      if(not self.sessionStart):
-        self.sessionStart = self.convert_to_chat_format(promptMessage, includeTokens=True)
       
-    historyWindow = self.getContextWindow(prompt=prompt)
+    historyWindow = self.getContextWindow()
     relevantContext.extend(historyWindow)
     
     if(self.verbose):
@@ -124,102 +100,100 @@ class Context(object):
       
     return relevantContext    
   
-  def get_relevant_context_as_text(self, prompt, start = None, end = None):
-    context = self.get_relevant_context(prompt=prompt, start=start, end=end)
+  
+  def getRelevantContextAsText(self, prompt, start = None, end = None):
+    context = self.getRelevantContext(prompt=prompt, start=start, end=end)
     result = ""
     for message in context:
       result += message["role"] + ": " + message["content"]+"\n"
-    
     return result
   
-  def append_message(self, message, role, roleName):
+  
+  def SetSystemMessage(self, message):
+    self.systemMessage = ContextEntry(role="system", content=message, roleName="system", context=self)
+  
+  def ActivateModel(self):
+    if self.model is None:
+      self.model = globalNexus.CortexModel
+    self.model.activate()
+      
+  def AppendMessage(self, message, role, roleName):
     if(message):
-      self.last_message = message
-      messageId = f"{role}-{uuid.uuid4()}"
-      tokens = self.get_token_size(message)    
-      message = {"role":role, "content":message, "id":messageId,
-                  "created":str(datetime.datetime.now()), "tokens":tokens, "roleName":roleName}
-      self.message_history.append(message)
+      messageObj = ContextEntry(role=role, content=message, roleName=roleName, context=self)
+      self.lastMessageTxt = message
+      self.lastMessageObj = messageObj
+      self.linkMessage(messageObj)
+      self.messageHistory.append(messageObj)
       if(self.verbose):
-        print(f"Message: {self.last_message}")
-    return message
+        print(f"Message: {self.lastMessageTxt}")
+    return messageObj
   
   
-  def append_answer(self, role, message):
-    id = message["id"]
-    id = id.replace("chatcmpl", role)
-    msg = message["choices"][0]["message"]["content"]
-    if(msg):
-      while r"\n" in msg:
-        msg = msg.replace(r"\n", "\n")
-        
-      if(msg.startswith(f"{role}: ")):
-        msg=msg.replace(f"{role}: ", "")
-        
-      msgObject = {"role":"assistant", "content":msg, "id":id, "created":str(datetime.datetime.now()),
-                  "tokens":message["usage"]["completion_tokens"], "roleName":role}
-      self.message_history.append(msgObject)
-      self.last_answer = msg
-      
-      if not role in self.proxyInteractionCounter:
-        self.proxyInteractionCounter[role] = 0
-        
-      self.proxyInteractionCounter[role] += 1
-      
-      if(self.verbose):
-        print(f"Answer: {self.last_answer}")
+  def AppendAnswer(self, role, answer):
+    msgObject = self.model.FormatAnswer(answer = answer, role = role, context = self)
+    self.linkMessage(msgObject)
+    self.messageHistory.append(msgObject)
+    self.lastAnswerObj = msgObject
+    self.lastAnswerTxt = msgObject.content
+    if(self.verbose):
+      print(f"Answer: {self.lastAnswerTxt}")
+    return msgObject
+  
 
+  def linkMessage(self,message):
+    if(len(self.messageHistory) > 0):
+      self.messageHistory[-1].next = message
+      message.previous = self.messageHistory[-1]
+
+
+  def GetUncommitedMessages(self, processName, frequency):
+    history = self.filteredHistory()
     
-  def remove_last(self):
-    lastMsg = self.message_history.pop()
-    if(lastMsg["role"] != "user"):
-      self.last_answer = None
+    if(frequency == -1):
+      return history
+    
+    history = list(filter(lambda x: processName not in x.commitedProcesses, history))
+
+    if(len(history)> frequency):
+      for message in history:
+        message.commitedProcesses.append(processName)
+      print(f"{processName} uncommited: len(history) -- frequency: {frequency}")
+      
+      return history
     else:
-      self.last_message = None
+      return []
+    
+    
+  def TabulaRasa(self):
+    for message in self.messageHistory:
+      message.commitedProcesses = []
+
+  def calcTokenCount(self, message):
+    message.tokensSize, message.tokens = globalNexus.CalcTokenSize(message.content)
+    
+  def RemoveLast(self):
+    lastMsg = self.messageHistory.pop()
+    if(lastMsg["role"] != "user"):
+      self.lastAnswerObj = None
+    else:
+      self.lastMessageTxt = None
     print("Last message removed")
-      
-  
-    
-  def getChunks(self, chunkSize, chunkIndex):
-    chunks = []
-    start = chunkSize * chunkIndex
-    end = start+chunkSize
-    
-    if(start > len(self.message_history)):
-      return chunks
-    
-    if(end > len(self.message_history)):
-      end = len(self.message_history)    
-    
-    for i in range(start, end):
-      chunks.append(self.message_history[i])
-    return chunks
-  
-  def GetChunkCount(self, chunkSize):
-    return math.ceil(len(self.message_history) / chunkSize)
-    
 
-  def switchUp(self, n, l):
-
-    msgs = self.message_history[-n:]
-    self.message_history = self.message_history[0:-n]
-    upperPart = self.message_history[0:-l]
-    lowerPart = self.message_history[-l:]
+  
+  def SwitchUp(self, n, l):
+    msgs = self.messageHistory[-n:]
+    self.messageHistory = self.messageHistory[0:-n]
+    upperPart = self.messageHistory[0:-l]
+    lowerPart = self.messageHistory[-l:]
     
-    self.message_history = upperPart + msgs + lowerPart
+    self.messageHistory = upperPart + msgs + lowerPart
   
   
-  def switchDown(self, n,l):
+  def SwitchDown(self, n,l):
     k = n+l
-    msgs = self.message_history[-k:-l]
+    msgs = self.messageHistory[-k:-l]
     
-    upperPart = self.message_history[0:-k]
-    lowerPart = self.message_history[-l:]
+    upperPart = self.messageHistory[0:-k]
+    lowerPart = self.messageHistory[-l:]
     
-    self.message_history = upperPart + lowerPart + msgs
-    
-
-
-
-  
-  
+    self.messageHistory = upperPart + lowerPart + msgs

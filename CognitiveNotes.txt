@@ -1,0 +1,49 @@
+
+
+
+
+     
+   def ShouldRun(self):
+    if self.ShouldRun:
+      return self.frequency !=  -1
+    else:
+      if(self.proxy.context.verbose):
+        print(f"Running decisory process for {self.Name}")
+      result = True    
+      if(self.DecisoryStatement):
+        prompt = f"You now have the option to {self.DecisoryStatement}. Is it applicable?  Answer with yes or no only."
+        decision = self.proxy.GenerateAnswer(prompt= prompt, shard=self.Shard, contextCallback = self.contextCallback)
+        result = globalMemory.sentenceToBoolean(decision)
+    
+      if(self.proxy.context.verbose):
+        print(f"Result = {result}")   
+
+          
+
+  def ChooseSubProcess(self, decision):
+      choice = next((subProcess for subProcess in self.SubProcesses 
+                      if decision.lower().contains(subProcess.Name.lower())), None)
+      
+      if(choice & self.proxy.context.verbose):
+        print(f"SubCognitiveProcess {choice.Name} selected")      
+      return choice
+
+
+  def ConditionalRunSubProcesses(self):
+    if(self.SubProcesses):
+      decisoryStatement = "If applicable, you now have the following options:\n"
+      for subProcess in self.SubProcesses:
+        decisoryStatement += f"Name: {subProcess.Name} - {subProcess.DecisoryStatement}\n"
+      decisoryStatement += "Respond with the Name of the option if any applies or respond with none if no option applies\n"
+      
+      prompt = decisoryStatement
+      
+      decision = self.proxy.GenerateAnswer(prompt= prompt, shard=self.Shard, contextCallback = self.contextCallback)
+      if(decision.lower() != "none"):
+        choice = self.ChooseSubProcess(decision)
+        if(not choice):
+          prompt += "You have chosen an invalid option. Please try again.\n"
+          decision = self.proxy.GenerateAnswer(prompt= prompt, shard=self.Shard, contextCallback = self.contextCallback)
+          choice = self.ChooseSubProcess(decision)
+        if(choice):
+          choice.Run()

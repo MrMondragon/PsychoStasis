@@ -3,12 +3,13 @@ import json
 import os
 import copy
 import shelve
-
 from Nexus import globalNexus
 from Context import Context
 from CognitiveSystem import cognitiveSystem
-from Memory import globalMemory
 from AuthoritativeSystem import authoritativeSystem
+from ContextEntry import ContextEntry
+from typing import List
+
 
 proxy_path = 'Proxies/' 
 
@@ -23,12 +24,6 @@ class Proxy:
     
     with shelve.open(str(self.memoryPath)) as memory:
       self.context = memory.get(name, Context())
-      self.context.sessionStart = None
-      self.context.proxyInteractionCounter[name] = 0
-      self.innerThoughts = memory.get(name+".inner", Context())
-      self.innerThoughts.sessionStart = None
-      self.innerThoughts.proxyInteractionCounter[name] = 0
-      
     
     # Define the path to 'proxy' folder
     workPath = os.path.join(cwd, proxy_path)
@@ -37,7 +32,6 @@ class Proxy:
     # Scan all '.config' files in 'models' directory
     file_list = glob.glob(os.path.join(workPath, pattern))
     self.params = {}
-    
     
     if file_list:  # If list is not empty
       filename = file_list[0]  # Return the first file found
@@ -49,7 +43,7 @@ class Proxy:
             self.params[key] = value
                     
     self.primer = "" if "primer" not in kwargs else kwargs["primer"];
-    self.coreStatements = [] if "coreStatements" not in kwargs else kwargs["coreStatements"];
+    self.tenets = [] if "tenets" not in kwargs else kwargs["tenets"];
     self.tags = [] if "tags" not in kwargs else kwargs["tags"];
     self.LoRa = "" if "LoRa" not in kwargs else kwargs["LoRa"];
     self.model_name = "" if "model_name" not in kwargs else kwargs["model_name"];
@@ -62,82 +56,72 @@ class Proxy:
     self.params = kwargs
     self.shouldGenerate = True
     self.collective = None if "collective" not in kwargs else kwargs["collective"];
-    self.context.systemMessage = self.GenerateSystem()
     self.innerPersona =  "" if "inner_persona" not in kwargs else kwargs["inner_persona"];
-    self.innerThoughts.systemMessage = self.GenerateSystem(innerThoughts = True)
     self.isCollective = False
 
+
   @classmethod
-  def get_proxy_list(cls):    
+  def GetProxyList(cls):    
     # get all files in directory
     files = os.listdir(proxy_path)
     proxy_list = [os.path.basename(f) for f in files if f.endswith('.proxy')]
     proxy_list = [f.replace('.proxy', '') for f in proxy_list]
     return proxy_list
   
+
   def LoadLora(self):
     if(globalNexus.CortexModel.params['LoRa']!= self.LoRa):
       globalNexus.deactivate_model(self.model_name)
       globalNexus.CortexModel.params['LoRa'] = self.LoRa
   
-  def GenerateAnswer(self, prompt, shard=None, contextCallback = None, innerThoughts = False, grammar = "",
-                     max_tokens = 0, recusiveLevel = 0):
-      if(innerThoughts):
-        context = self.innerThoughts
-      else:
-        context = self.context
-      
-      oldModel = context.model
+
+  def GenerateAnswer(self, prompt, shard=None, contextCallback = None, grammar = "",
+                     max_tokens = 512):
 
       if(globalNexus.CortexModel_name != self.model_name):
         globalNexus.load_model(self.model_name)
 
       if(shard!='' and shard!=None):
-        context.model = globalNexus.ShardModels[shard]
+        self.context.model = globalNexus.ShardModels[shard]
       else:
-        context.model = globalNexus.CortexModel        
-        globalNexus.load_grammar(grammar)
+        self.context.model = globalNexus.CortexModel
+        if(grammar):
+          globalNexus.load_grammar(grammar)
+        
+      self.context.model.activate()
+      
+      self.context.SetSystemMessage(self.GenerateSystem())
 
       if(self.temperature != -1):
         globalNexus.CortexModel.params["temperature"] = self.temperature
         
       if(shard==None):
         self.LoadLora();   
-        
-      context.model.activate()
-      context.window_size = globalNexus.CortexModel.params["n_ctx"] - globalNexus.CortexModel.params["max_tokens"]      
-      context.proxy = self
+      
+      self.context.proxy = self
+      
       cognitiveSystem.RunProcesses(proxy=self, context="beforeGenerateAnswer")    
-      localContext = context.get_relevant_context(prompt=prompt, contextCallback = contextCallback)
-        
+      localContext = self.context.getRelevantContext(prompt=prompt, contextCallback = contextCallback)
+      localContext = [x.GetDictionary() for x in localContext]
+      
       if(shard!='' and shard!=None):
         answer = globalNexus.generate_completion_shard(localContext = localContext, model_name=shard, max_tokens = max_tokens)
       else:
         answer = globalNexus.generate_completion_cortex(localContext = localContext, max_tokens = max_tokens)
-      
-      context.contextual_info = None
-      context.append_answer(role=self.name, message=answer)
+
+      self.context.AppendAnswer(role=self.name, answer=answer)
       cognitiveSystem.RunProcesses(proxy=self, context="afterGenerateAnswer")
       
-      if(not context.last_answer) or (context.last_answer == " " or context.last_answer == ""):
-        print(f"Removing last answer and trying again. Reason: empty answer")
-        if(recusiveLevel < 1):
-          self.enterSubContext(deepCopy=True)
-          prompt = prompt + f" You gave me an empty answer! Please try again! Answer the following: {prompt}\n"
-          print(f"Trying to get a non empty message by asking the model explicitly. Reason: empty answer")          
-          subContextAnswer = self.GenerateAnswer(prompt=prompt, shard=shard, contextCallback = contextCallback, max_tokens=max_tokens, recusiveLevel = recusiveLevel+1)
-          self.exitSubContext()          
-          self.context.last_answer = subContextAnswer
-      
-      context.model = oldModel
       self.commitContext()
-      return context.last_answer
+      return self.context.lastAnswerObj
+
   
   def GenerateSystem(self, innerThoughts= False):
     sysMessage = []
     
     pronoun = "I" if "person" in self.params and self.params["person"] == "1st" else "you"
     toBe = "am" if "person" in self.params and self.params["person"] == "1st" else "are"
+    possessive = "my" if "person" in self.params and self.params["person"] == "1st" else "your"
 
     sysMessage.append(f"{pronoun} {toBe} {self.name}, {self.primer}")
     if(self.collective != None):
@@ -145,38 +129,33 @@ class Proxy:
       sysMessage.append(self.collective.primer)
     if(innerThoughts):
       sysMessage.append(self.innerPersona)
-    else:
-      sysMessage.append(f"{pronoun} believe, above all, in the following:")
-      sysMessage.extend(self.coreStatements)
-      if(self.collective != None):
-        sysMessage.extend(self.collective.coreStatements)      
-      if(self.extended_core != ""):
-        sysMessage.append(self.extended_core)
+    
+    sysMessage.append(f"{possessive} Core Tenets are:")
+    sysMessage.extend(self.tenets)
+    if(self.collective != None):
+      sysMessage.extend(self.collective.tenets)      
+    
+    if(self.extended_core != ""):
+      sysMessage.append(self.extended_core)
+      
     sysMessage = "\n".join(sysMessage)
       
     if("{user_name}" in sysMessage):
       sysMessage = sysMessage.replace("{user_name}", self.context.userName)
     if("{user}" in sysMessage):
       sysMessage = sysMessage.replace("{user}", self.context.userName)
-   
     
     return sysMessage
   
   
-  def MessageProxy(self, proxy_name, message):
-    cognitiveSystem.RunProcesses(proxy=self, context="beforeMessageProxy")
-    if(self.collective != None) & (proxy_name in self.collective.proxies):
-      self.collective.proxies[proxy_name].ReceiveMessage(poxy=self, message=message)
-  
-  def MessageColective(self, message):
-    #####################################################################################################
-    cognitiveSystem.RunProcesses(proxy=self, context="beforeMessageCollective")
-    pass
-  
-  def ReceiveMessage(self, message, role="user"):
-    self.context.messageSender = self.context.userName
+  def ReceiveMessage(self, message, role="user", roleName = ""):
+    if(role == "user"):
+      self.context.messageSender = self.context.userName
+    else:
+      self.context.messageSender = roleName
+      
     self.context.senderRole = role
-    self.shouldGenerate = True
+    
     message = authoritativeSystem.Run(proxy=self, prompt=message, role=role)
     self.shouldGenerate = bool(message)
     if(self.shouldGenerate):#allows for interruption after authoritativeMessage
@@ -191,16 +170,18 @@ class Proxy:
     self.context.senderRole = None
     return answer
 
+
   def enterSubContext(self, deepCopy=False, copySystem=False, 
-                      copyLastMessage=False,
-                      copyLastAnswer=False,
+                      copylastMessageTxt=False,
+                      copylastAnswerObj=False,
                       copyContextualInfo =False, 
-                      innerThoughts=False, resetCortex=False, start = None, end = None):
+                      innerThoughts=False, resetCortex=False, interactions: List[ContextEntry]=None):
     
     newContext = Context()
-    if(resetCortex):globalNexus.CortexModel.reset()
-    context = self.innerThoughts if innerThoughts else self.context
+    context = self.context
     print(f"Entering context {newContext.contextID} from context {context.contextID}")
+    if(resetCortex):
+      globalNexus.CortexModel.reset()      
     newContext.userName = context.userName  
     newContext.parentContext = context
     newContext.proxy = context.proxy
@@ -208,55 +189,46 @@ class Proxy:
     newContext.verbose = context.verbose
     
     if(deepCopy):
-      newContext.message_history = copy.deepcopy(context.message_history)
-    elif (start or end):
-      newContext.message_history = context.get_relevant_context(start=start, end=end)
+      newContext.messageHistory = copy.deepcopy(context.messageHistory)
+    elif (interactions):
+      newContext.messageHistory.extend(interactions)
 
-    if(copyLastMessage):
-      newContext.last_message = context.last_message
-      newContext.append_message(context.last_message, role="user")
-    if(copyLastAnswer):
-      newContext.last_answer = context.last_answer
-      newContext.append_message(context.last_answer, role="assistant")
+    if(copylastMessageTxt):
+      newContext.lastMessageTxt = context.lastMessageTxt
+      newContext.lastMessageObj = context.lastMessageObj
+    if(copylastAnswerObj):
+      newContext.lastAnswerTxt = context.lastAnswerTxt
+      newContext.lastAnswerObj = context.lastAnswerObj
     
     if(copySystem):
-      newContext.systemMessage = context.systemMessage
+      newContext.SetSystemMessage(self.GenerateSystem(innerThoughts=innerThoughts))
       
     if(copyContextualInfo):
       newContext.contextual_info = copy.deepcopy(context.contextual_info)   
     
-    
-    if(innerThoughts):
-      self.innerThoughts = newContext
-    else:
-      self.context = newContext
+    self.context = newContext
     
     return newContext
     
-  def exitSubContext(self, innerThoughts=False):
-    context = self.innerThoughts if innerThoughts else self.context
+    
+  def exitSubContext(self):
+    context = self.context
     if(context.parentContext):
       print(f"exiting context {self.context.contextID} to context {self.context.parentContext.contextID}")    
-      if(innerThoughts):
-        self.innerThoughts = context.parentContext
-      else:
-        self.context = context.parentContext
-      return context
+      self.context = context.parentContext
+      return self.context
+  
   
   def commitContext(self):
+    self.context.messageHistory = self.context.filteredHistory()
     with shelve.open(str(self.memoryPath)) as memory:
       memory[self.name] = self.context 
-      memory[self.name+".inner"] = self.innerThoughts 
       print("context commited")
+      
       
   def clearContext(self):
     self.context = Context()
-    self.innerThoughts = Context()
     self.commitContext()
     
-  
-  def deactivateCortex(self):
-    globalNexus.CortexModel.deactivate()
-    
-  def activateCortex(self):
-    globalNexus.CortexModel.activate()
+  def TabulaRasa(self):
+    self.context.TabulaRasa()

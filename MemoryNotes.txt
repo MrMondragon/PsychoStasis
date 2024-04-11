@@ -1,0 +1,101 @@
+Context memory is not a collection!!
+it is a message list with priority which is manipulated by
+the cognitive system
+then the context of the proxy absorbs it partially or fully in priority order
+distance based information is inserted with the formula
+((1/distance) * base priority) + base priority
+
+    ### Context consumes memory and not the other way around (to avoid circular references)
+    ### Check response with personality
+    ###   does this answer align with your personality?
+    ##      tell me a fact about you that shows this misalignment
+    ##      feed fact back into extended core
+    ##      rephrase it so that it better aligns with your personality
+    
+    #  evaluate each metadata to see if, when and how it will be used
+    #  eg.: datetime can be used in a formula like this: ((today - datetime)/10) * basepriority) + basepriority
+    #  other factors such as user sentiment, salience (not yet implemented) can also influence priority
+    #   all this will be performed by the recall processes
+    ###
+    #  proxy core and extended core enter the list with priority 100 (basepriority / 5)
+    #  this information comes from the not yet implemented reflectiveMemory
+    
+    #############  See if some of the commitToMemory code should be moved here
+
+
+    ###############################################################
+    ################## Tag and Entity Memory ######################
+    ###############################################################
+
+    
+    #stores tags for vectorial search
+    #tagging conversations as an authoritative command
+    #tags are stored in the metadata as well as here
+    #structure is {tag: [conversationId1, conversationId2, conversationId3]}
+
+    ############################Study Private gpt to see the structure of documental memory
+
+
+  
+    ###############################################################
+    ##################### Documental Memory #######################
+    ###############################################################
+    
+    #Level zero contains the document/conversation entry with metadata and how many summarization levels it has
+    #Hierarchical level is a self referencing hierarchical structure with as many summarization levels as necessary for the document. Each level is an expansion of the previous level. The last level is the raw document text in chunks
+    #It would be good if the chunk size was configurable
+    ##################
+    ################## CommitToEpisodicMemory should see if there's an entry here. If not, create one with Date, SystemMessage, Theme and TITLE
+    ##################
+
+ ######################################################## See below for updating metadata
+    #run query against entityMemory
+      #for each entity in ner, get factlist from entityMemory
+      #calc distances between fact and query
+    #run query against hierarchicalMemory and deduplicate the results
+      #expand hierarchicalMemory 
+      #expand hierarchicalMemory with episodicMemory
+    #run query against consolidatedMemory
+    #expand results with episodicMemory
+    #calc priority based on discreet sentiment, distance, recency and source (factual, consolidated, or episodic)
+    #there will need to be a cogProc to consolidate memory in hierarchy
+      #each entry on hierarchical memory whill have a parent and a level property on metadata
+      #there will be a cogProc to get entries without parents, consolidate them and add the parent to the entry
+    #this process will be akin to the one on doc ingestion and chunking process
+    #developing the ingestion method first will generate data to be recollected
+    #a pure factual recollection available to the proxy, with entry priority being recalculated according to the last query - freq 7, 11, 13 or 17
+    #this method should return a list of textual results sorted by priority
+    
+    
+    
+    #so, the order of tasks is:
+    #OK# CHECK TO SEE IF THE MEMORY PROCESSES ARE USING IDENTIFICATORS CORRECTLY!!!
+    ### Test and validate the new memory structure part by part
+    ### Entity memory needs to add and deduplicate to the entryIds!!!
+    #OK# Alter the consolidation process to implement hierarchy
+      # Implement thematization of the conversation, both here and in a dedicated cog proc
+      # Implmement the ingestion process
+      # Implement the recollection process
+      # Implement Authotritative Commands for both
+      # Implement autonomous shallow factual recollection
+      # Refactor inner thoughts out
+      
+    ### To be considered:
+      # episodic/textual memory => consolidated memory => factual memory => documental memory
+      # sentiment memory ~ entity memory
+    
+    ### Entity memory needs to add and deduplicate to the entryIds
+    
+    #while we're at it
+      # From pyramid of thoughts comes prompt scripting and a prompt script runner cog proc
+      # this will be the basis for reasoning and reflecting
+      # and will include structures like
+        # Standard prompt
+        # Input requesting
+        # Conditional branching
+        # Iterative looping (eg.: expand on steps given on a previous answer)
+          # items found via regex
+    
+    
+    
+# tuple(text, priority: float,  tokenSize: int, contextID: str)      

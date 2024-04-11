@@ -8,15 +8,24 @@ class CognitiveSystem(DynamicSystem):
     self.commonProcesses = list(map(lambda proc: proc.Name, commonProcesses))
     self.stack = deque()
     self.params = {}
-    self.params["system"] = "system1"
 
+  def RunProcess(self, proxy, procName):
+    if(procName in self.processes):
+      proc = self.processes[procName]
+      return proc.Run(proxy)
+    
 
   def RunProcesses(self, proxy, context):
+    print(f"Running processes in context {context}")
     self.params = {}
-    self.params["system"] = "system1"
-    processes = list(filter(lambda proc: (context in proc.contexts)
-                            and ((proc.Name in proxy.cognitiveProcs) 
-                            or (proc.Name in self.commonProcesses)), self.processes.values()))
+    
+    processes = self.processes.values()
+    print(f"All procs: {'|'.join(proc.Name for proc in processes)}")
+    processes = list(filter(lambda proc: (context in proc.contexts), processes))
+    print(f"Context filtered procs: {'|'.join(proc.Name for proc in processes)}")
+    processes = list(filter(lambda proc: ((proc.Name in proxy.cognitiveProcs) or (proc.Name in self.commonProcesses)), processes))
+    print(f"Proxy and common filtered procs: {'|'.join(proc.Name for proc in processes)}")
+  
     
     if(proxy.collective != None):
       processes = list(filter(lambda proc: ((proc.Name not in proxy.collective.cognitiveProcs) and

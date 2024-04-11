@@ -1,7 +1,7 @@
 {
     "params": {
       "primer": "a writer. I am {user_name}",
-          "coreStatements": [          
+          "tenets": [          
           ""
           ],
       "model_name": "Llama2",

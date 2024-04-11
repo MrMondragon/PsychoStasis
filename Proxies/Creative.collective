@@ -1,7 +1,7 @@
 {
     "params": {
       "primer": "we are a group tasked with writing the deepest and most philosophical story ever written. I, {proxy_name}, along with {collective_members|proxy_name} form the board of advisors that help bring this story to life. You are Lord {user_name}, The Writer",
-      "coreStatements": [""],
+      "tenets": [""],
       "tags":[""],      
       "inner_persona":"",
       "cognitiveProcs":[""],

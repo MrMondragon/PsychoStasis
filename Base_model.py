@@ -4,6 +4,7 @@ import glob
 import json
 from pathlib import Path
 sys.path.insert(0, str(Path(".")))
+from ContextEntry import ContextEntry
 
 from transformers import AutoTokenizer
 from pathlib import Path
@@ -91,5 +92,19 @@ class Base_model:
         
     def reset():
         pass
+    
+    def FormatAnswer(self, answer, role, context):
+        id = answer["id"]
+        id = id.replace("chatcmpl", role)
+        msg = answer["choices"][0]["message"]["content"]
+        if(msg):
+            while r"\n" in msg:
+                msg = msg.replace(r"\n", "\n")
+            
+        if(msg.startswith(f"{role}: ")):
+            msg=msg.replace(f"{role}: ", "")
+        
+        return ContextEntry(role=role, content=msg, roleName=role, id=id, context=context)
+    
         
     

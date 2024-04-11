@@ -3,7 +3,6 @@ import re
 from functools import partial
 import numpy as np
 import torch
-
 import RoPE
 from callbacks import Iteratorize
 
@@ -242,3 +241,5 @@ class GGUF_model(Base_model):
         
     def reset(self):
         self.model.cache = None
+    
+    

@@ -1,0 +1,19 @@
+  Review CommitToMemory
+  Accordion controls to
+    View and select the active speaker and switch collectives
+    Inner Thoughts ---- Maybe this could be a colapsable bubble below the HTML of the message
+    Inspect memory
+    Inspect Cognitive Processes
+      frequency
+      schedule
+      stack
+  Trigger for inter proxy conversation (eg.: when a proxy @'s another)
+  Implement schedule for Cognitive Processes
+    checked and executed on interaction (before and after generation?)
+  Authoritative command to query inner thoughts
+  Implement Recall Cognitive Process
+  Implement Ingest Content Authoritative Command
+  Implement Extract Video Transcript Authoritative Command
+  Study Private GPT for chunking and memory structure
+  --Study OobaBooga for HTML Chat
+  Refactor ChatMKI

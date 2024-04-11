@@ -9,6 +9,7 @@ class Sentiment_model(Base_model):
     
   def load(self):
     self.model =  pipeline("text-classification", model=self.path, device=0,  top_k=self.top_k)
+    self.tokenizer = self.model.tokenizer
      
      
   def generate(self, localContext, callback=None,):
