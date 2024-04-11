@@ -25,22 +25,23 @@ class Memory(object):
   
     ###############################################################
     ################### Discriminatory Memories ###################
-    ###############################################################    
-    globalNexus.BeginShardBatch("Embeddings.Embeddings")
-    self.booleanDiscriminationMemory = self.client.get_or_create_collection("booleanDiscriminationMemory",
-                                                                           embedding_function=NexusEmbeddingFunction())
-    if(self.booleanDiscriminationMemory.count() == 0):
-      self.booleanDiscriminationMemory.add(documents=[negativeStr, positiveStr], ids=["0", "1"])
-      
-    self.closestWordMemory = self.client.get_or_create_collection("closestWordMemory",
-                                                                  embedding_function=NexusEmbeddingFunction())
-    if(self.closestWordMemory.count() == 0):
-      with open("./models/vocab.txt", "r",  encoding="utf-8") as f:
-        words = f.read().splitlines()
-      words = list(filter(lambda s: not any(s.startswith(c) for c in invalidChars) and len(s)>2, words))
-      ids = [f"id_{i}" for i in range(0, len(words))]
-      self.closestWordMemory.add(documents=words, ids=ids)
-    globalNexus.EndShardBatch("Embeddings.Embeddings")
+    ############################################################### 
+    if(self.persistent):
+      globalNexus.BeginShardBatch("Embeddings.Embeddings")
+      self.booleanDiscriminationMemory = self.client.get_or_create_collection("booleanDiscriminationMemory",
+                                                                            embedding_function=NexusEmbeddingFunction())
+      if(self.booleanDiscriminationMemory.count() == 0):
+        self.booleanDiscriminationMemory.add(documents=[negativeStr, positiveStr], ids=["0", "1"])
+        
+      self.closestWordMemory = self.client.get_or_create_collection("closestWordMemory",
+                                                                    embedding_function=NexusEmbeddingFunction())
+      if(self.closestWordMemory.count() == 0):
+        with open("./models/vocab.txt", "r",  encoding="utf-8") as f:
+          words = f.read().splitlines()
+        words = list(filter(lambda s: not any(s.startswith(c) for c in invalidChars) and len(s)>2, words))
+        ids = [f"id_{i}" for i in range(0, len(words))]
+        self.closestWordMemory.add(documents=words, ids=ids)
+      globalNexus.EndShardBatch("Embeddings.Embeddings")
 
     
   ###############################################################
@@ -232,6 +233,6 @@ class Memory(object):
       self.ResetRecollectionContext()
       
 ###############################################################
-################## Global Memory Object #######################
+################## Long Term Memory Object ####################
 ###############################################################
 longTermMemory = Memory()    

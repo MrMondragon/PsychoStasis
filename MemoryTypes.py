@@ -11,7 +11,7 @@ class RecollectionLevel(Enum):
   
 class MemoryLevel(Enum):
   Thematic = 0
-  Abstract = 1
+  Abstract = 1 #old factual memory
   Summary = 2
   Episodic = 3
   Entity = 4

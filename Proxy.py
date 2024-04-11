@@ -23,7 +23,9 @@ class Proxy:
     self.memoryPath = os.path.join(cwd, 'Memory\\contexts.shelve')
     
     with shelve.open(str(self.memoryPath)) as memory:
-      self.context = memory.get(name, Context())
+      self.context = memory.get(name, Context(self))
+    
+    
     
     # Define the path to 'proxy' folder
     workPath = os.path.join(cwd, proxy_path)
@@ -58,6 +60,7 @@ class Proxy:
     self.collective = None if "collective" not in kwargs else kwargs["collective"];
     self.innerPersona =  "" if "inner_persona" not in kwargs else kwargs["inner_persona"];
     self.isCollective = False
+    self.context.proxy = self
 
 
   @classmethod
@@ -227,7 +230,7 @@ class Proxy:
       
       
   def clearContext(self):
-    self.context = Context()
+    self.context = Context(self)
     self.commitContext()
     
   def TabulaRasa(self):

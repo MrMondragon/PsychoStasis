@@ -9,7 +9,7 @@ from ContextEntry import ContextEntry
 from typing import List
   
 class Context(object):
-  def __init__(self) -> None:
+  def __init__(self, proxy) -> None:
     self.parentContext = None
     self.contextID = uuid.uuid4()
     self.messageHistory : List[ContextEntry] = []
@@ -22,7 +22,7 @@ class Context(object):
     self.userName = "Ergo"
     self.verbose = False
     self.collective = None
-    self.proxy = None
+    self.proxy = proxy
     self.messageSender = None
     self.senderRole = None
     self.model = None
@@ -113,6 +113,8 @@ class Context(object):
     self.systemMessage = ContextEntry(role="system", content=message, roleName="system", context=self)
   
   def ActivateModel(self):
+    if(globalNexus.CortexModel_name != self.proxy.model_name):
+      globalNexus.load_model(self.proxy.model_name)    
     if self.model is None:
       self.model = globalNexus.CortexModel
     self.model.activate()
@@ -156,7 +158,7 @@ class Context(object):
 
     if(len(history)> frequency):
       for message in history:
-        message.commitedProcesses.append(processName)
+        message.CommitProcess(processName)
       print(f"{processName} uncommited: len(history) -- frequency: {frequency}")
       
       return history
