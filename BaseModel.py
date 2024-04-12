@@ -14,10 +14,10 @@ import gc
 
 
 
-class Base_model:
-    def __init__(self, model_name, **kwargs) -> None:
+class BaseModel:
+    def __init__(self, modelName, **kwargs) -> None:
         self.params = kwargs
-        self.model_name = model_name
+        self.modelName = modelName
         self.model = None
         self.tokenizer = None
         self.path = None
@@ -30,7 +30,7 @@ class Base_model:
         # Define the path to 'models' folder
         models_path = os.path.join(cwd, "models")
         # Build the pattern for glob function
-        pattern = f"{model_name}*.config"
+        pattern = f"{modelName}*.config"
         
         # Scan all '.config' files in 'models' directory
         file_list = glob.glob(os.path.join(models_path, pattern))
@@ -53,13 +53,13 @@ class Base_model:
         if(not self.active):
             self.load()
             self.active = True
-            print(f"model {self.model_name} activated")
+            print(f"model {self.modelName} activated")
         
     def deactivate(self):
         if(self.active):
             self.unload()
             self.active = False
-            print(f"model {self.model_name} deactivated")
+            print(f"model {self.modelName} deactivated")
         
     def unload(self):
         del self.model

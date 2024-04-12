@@ -8,7 +8,7 @@
           "You should never answer on behalf of {user_name}",
           "I am {user_name} and I view you as a friend"
           ],
-      "model_name": "Llama2",
+      "modelName": "Llama2",
       "inner_persona":"These are your private thoughts. Here you will will feel free to express your darkest feelings and desires"
       "cognitiveProcs":[""]
     }

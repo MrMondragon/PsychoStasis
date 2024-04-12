@@ -5,11 +5,11 @@ sys.path.insert(0, str(Path(".")))
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from pathlib import Path
-from Base_model import Base_model
+from BaseModel import BaseModel
 
-class CausalLM(Base_model):
-    def __init__(self, model_name, **kwargs) -> None:
-        super().__init__(model_name, **kwargs)
+class CausalLM(BaseModel):
+    def __init__(self, modelName, **kwargs) -> None:
+        super().__init__(modelName, **kwargs)
         self.params['low_mem'] = False if 'low_mem' not in self.params else self.params['low_mem']
         self.params['max_length'] = 2048 if 'max_length' not in self.params else self.params['max_length']
         self.params['bf16'] = True if 'bf16' not in self.params else self.params['bf16']

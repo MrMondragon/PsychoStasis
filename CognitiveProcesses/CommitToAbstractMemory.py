@@ -24,23 +24,25 @@ class CommitToAbstractMemory(BaseCognitiveProcess):
   def _internalRun(self, localContext):
     super()._internalRun()
     conversationId=str(self.proxy.context.contextID)
+    globalNexus.BeginShardBatch("Embeddings.Embeddings")
     
     #get all summaries that don't have parents
     summaries, summaryIds = longTermMemory.GetUnparentedMemories(memoryLevel=MemoryLevel.Summary, proxy=self.proxy)
 
     #generate N facts about the collection of summaries
-    self.proxy.enterSubContext(copySystem=True)
+    self.proxy.enterSubContext(copySystem=False)
     self.proxy.context.AppendMessage(role = "user", roleName=self.proxy.context.userName, message=summaries)
     facts = self.proxy.GenerateAnswer(prompt=f"Cite {self.factCount} facts you can gather from this conversation. Do not introduce yourself. Answer with the facts only!", grammar=grammars.list)
     self.proxy.exitSubContext()
     
     facts = facts.content
-    facts = facts.splitlines()    
+    if('\n' in facts):
+      facts = facts.splitlines()
+    else:
+      facts = facts.split(', ')
     facts = [fact.strip('- ') for fact in facts]
-    
     print(facts)
     
-    globalNexus.BeginShardBatch("Embeddings.Embeddings")
           
     #remove the begining in case the model has introduced the facts
     if(len(facts) > self.factCount):
@@ -72,9 +74,16 @@ class CommitToAbstractMemory(BaseCognitiveProcess):
         metadata.append(data)
       else:
         id = queryResult["ids"][0][0]
-        if id not in ids:
+        if(id not in ids):
           ids.append(id)
           documents.append(queryResult["documents"][0][0])
+          
+          sIds = summaryIds.split("|")
+          xIds = str(queryResult["metadatas"][0][0]["summaryIds"]).split("|")
+          sIds.extend(xIds)
+          sIds = list(set(sIds))
+          summaryIds = "|".join(sIds)          
+          
           queryResult["metadatas"][0][0]["summaryIds"] = summaryIds
           metadata.append(queryResult["metadatas"][0][0])
     

@@ -1,9 +1,9 @@
-from Base_model import Base_model
+from BaseModel import BaseModel
 from transformers import pipeline
 
-class Summarization_model(Base_model):
-  def __init__(self, model_name, **kwargs) -> None:
-    super().__init__(model_name, **kwargs)
+class SummarizationModel(BaseModel):
+  def __init__(self, modelName, **kwargs) -> None:
+    super().__init__(modelName, **kwargs)
     self.activateable = False
     self.max_length = 256
     self.min_length = 64

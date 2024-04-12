@@ -180,16 +180,6 @@ class LongTermMemory(object):
     for level in levels:
       self.client.delete_collection(f"{proxy.name}_{level}")
       
-  ###############################################################
-  ############# Thematization and Entityfication ################
-  ###############################################################     
-  def ThematizeMemory(self, proxy, conversationID, theme):
-    self.UpsertConversationCollection(proxy = proxy, memoryLevel=MemoryLevel.Thematic, conversationID=conversationID, themeOrEntity=theme)
-        
-  def EntityfyMemory(self,  proxy, conversationID, entities):
-    entities = list(entities.keys())
-    for entity in entities:      
-      self.UpsertConversationCollection(proxy = proxy, memoryLevel=MemoryLevel.Entity, conversationID=conversationID, themeOrEntity=entity)
 
   ###############################################################
   ####################### Recollection ##########################

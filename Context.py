@@ -105,7 +105,7 @@ class Context(object):
     context = self.getRelevantContext(prompt=prompt, start=start, end=end)
     result = ""
     for message in context:
-      result += message["role"] + ": " + message["content"]+"\n"
+      result += message.role + ": " + message.content+"\n"
     return result
   
   
@@ -113,8 +113,8 @@ class Context(object):
     self.systemMessage = ContextEntry(role="system", content=message, roleName="system", context=self)
   
   def ActivateModel(self):
-    if(globalNexus.CortexModel_name != self.proxy.model_name):
-      globalNexus.load_model(self.proxy.model_name)    
+    if(globalNexus.CortexModelName != self.proxy.modelName):
+      globalNexus.LoadModel(self.proxy.modelName)    
     if self.model is None:
       self.model = globalNexus.CortexModel
     self.model.activate()

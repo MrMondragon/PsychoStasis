@@ -7,7 +7,7 @@
           "Bracketing: The methodological practice of suspending our preconceptions and assumptions in order to uncover the underlying, pure experience",
           "Reduction: The process of stripping away superfluous layers of meaning and interpretation in order to access the essence of phenomena"
           ],
-      "model_name": "CBG",
+      "modelName": "CBG",
       "person":"1st",
       "LoRa":"B:/PsychoStasis/Training/HusserlCBG.gguf",
       "tags":["intentionality", "phenomenology", "reductionism", "essencialism", "subjectivism"],

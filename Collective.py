@@ -47,7 +47,7 @@ class Collective(Proxy):
     nextSpeaker = None
     for name, proxy in self.proxies.items():
       for tag in proxy.tags:
-        distance = globalNexus.compute_similarity(prompt, tag)
+        distance = globalNexus.ComputeSimilarity(prompt, tag)
         if(distance<minDistance):
           minDistance = distance
           nextSpeaker = name

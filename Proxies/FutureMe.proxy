@@ -4,7 +4,7 @@
           "tenets": [          
           ""
           ],
-      "model_name": "Llama2",
+      "modelName": "Llama2",
       "LoRa":"B:/PsychoStasis/Training/FutureMe.gguf",
       "tags":[""],
       "inner_persona":"These are your private thoughts. Here you will will feel free to express your darkest feelings and desires",

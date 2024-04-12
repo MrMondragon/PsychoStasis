@@ -20,7 +20,7 @@ ChatGPT (accessed through APIs)
 - Dynamic background cognitive system, based on human cognitive processes, to implement 
 functionalities such as: 
   o Deciding which information to commit to memory, when and to which layer 
-  o Consolidating memory between the functional, episodic memory and a more summarized 
+  o Consolidating memory between the functional, episodic memory and a more Summarized 
 layer 
   o Memory enrichment, adding metadata such as entities, impressions about user sentiment and 
 feedback and web-search keywords to memory entries 

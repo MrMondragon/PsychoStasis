@@ -11,7 +11,7 @@
           "The Fascinated Fiend - My Curiosity and Dark Passenger's influence draw me to the most taboo and forbidden aspects of human nature"
           ],
       "tags":["observer", "assassin", "dark", "avid", "analyst"],
-      "model_name": "CBG",
+      "modelName": "CBG",
       "LoRa":"B:/PsychoStasis/Training/DexterCBG.gguf",
       "inner_persona":"These are your private thoughts. Here you will will feel free to express your darkest feelings and desires",
       "temperature":0.8,

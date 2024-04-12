@@ -29,7 +29,7 @@ async def list_core(ctx):
   if(app_url is None):
     await ctx.send('Not Connected to server. Call \\connect')
   else:    
-    result = get_model_list(app_url, True)
+    result = GetModelList(app_url, True)
     await ctx.send(f'Models available on server: {result}')
   
 @bot.command()
@@ -37,11 +37,11 @@ async def core_names(ctx):
   if(app_url is None):
     await ctx.send('Not Connected to server. Call \\connect')
   else:    
-    result = get_model_names(app_url, True)
+    result = get_modelNames(app_url, True)
     await ctx.send(f'Models available on server: {result}')
     
 
-def get_model_list(address, core=True):
+def GetModelList(address, core=True):
     url = f"{address}/model_list"
     params = {'core': 'true' if core else 'false'}
 
@@ -55,12 +55,12 @@ def get_model_list(address, core=True):
         return models
     except requests.exceptions.RequestException as e:
         # Handle request exceptions here (e.g., connection error, timeout, etc.)
-        print(f"Error calling remote get_model_list service: {e}")
+        print(f"Error calling remote GetModelList service: {e}")
         return None
   
 
-def get_model_names(address, core=True):
-    url = f"{address}/model_names"
+def get_modelNames(address, core=True):
+    url = f"{address}/modelNames"
     params = {'core': 'true' if core else 'false'}
 
     try:
@@ -73,7 +73,7 @@ def get_model_names(address, core=True):
         return models
     except requests.exceptions.RequestException as e:
         # Handle request exceptions here (e.g., connection error, timeout, etc.)
-        print(f"Error calling remote get_model_names service: {e}")
+        print(f"Error calling remote get_modelNames service: {e}")
         return None  
   
 # @bot.event

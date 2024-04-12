@@ -28,7 +28,7 @@ class CommitToSummaryMemory(BaseCognitiveProcess):
     conversationId=str(self.proxy.context.contextID)
     id=f"sum-{uuid.uuid4()}"
     
-    summary = globalNexus.summarize(txtContent)
+    summary = globalNexus.Summarize(txtContent)
      
     data = longTermMemory.CreateSimpleMetadata(conversationId=conversationId, proxy=self.proxy.name)
     longTermMemory.CommitToMemory(proxy=self.proxy, memoryLevel=MemoryLevel.Summary, documents=[summary], metadata=[data], ids=[id])

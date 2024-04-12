@@ -1,11 +1,11 @@
-from Base_model import Base_model
+from BaseModel import BaseModel
 from transformers import pipeline
 import spacy
 import re
 
-class NER_model(Base_model):
-  def __init__(self, model_name, **kwargs) -> None:
-    super().__init__(model_name, **kwargs)
+class NERModel(BaseModel):
+  def __init__(self, modelName, **kwargs) -> None:
+    super().__init__(modelName, **kwargs)
     self.nlp  = spacy.load(self.params["spacyModel"])
     
   def load(self):

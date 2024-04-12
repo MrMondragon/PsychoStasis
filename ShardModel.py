@@ -30,7 +30,7 @@ from transformers import (
     XLNetTokenizer
 )
 
-from Base_model import Base_model
+from BaseModel import BaseModel
 
 supported_tasks = ["base", "masked_lm", "token_classification", "question_answering", 
                    "sequence_classification", "multiple_choice"]
@@ -58,7 +58,7 @@ xnl_task_mapping = {
     "sequence_classification": XLNetForSequenceClassification,
     }
 
-model_mapping = {
+modelMapping = {
     "xnl": xnl_task_mapping,
     "bert": bert_task_mapping,
     "distilbert": distilbert_task_mapping    
@@ -75,15 +75,15 @@ tokenizer_mapping = {
 ###TODO - COMBINE THE PIPELINE MODELS, IMPLEMENT SPECIALIZED PREDICTIONS AND CREATE A GENERATE METHOD
 ###AGGREGATING THE PREDICTORS
 
-class Shard_model(Base_model):
-    def __init__(self, model_name, **kwargs) -> None:
-        super().__init__(model_name, **kwargs) 
+class ShardModel(BaseModel):
+    def __init__(self, modelName, **kwargs) -> None:
+        super().__init__(modelName, **kwargs) 
         self.task:str  = 'base' if 'task' not in self.params else self.params['task']
         
 
     def load(self):
         
-        taskMapping = model_mapping.get(self.params['model_type'])
+        taskMapping = modelMapping.get(self.params['model_type'])
         taskClass = taskMapping.get(self.task)
         if(not taskClass):
             raise ValueError(f"Invalid task: {self.task}. Supported tasks: {', '.join(taskMapping.keys())}") 

@@ -25,8 +25,6 @@ class Proxy:
     with shelve.open(str(self.memoryPath)) as memory:
       self.context = memory.get(name, Context(self))
     
-    
-    
     # Define the path to 'proxy' folder
     workPath = os.path.join(cwd, proxy_path)
     # Build the pattern for glob function
@@ -48,7 +46,7 @@ class Proxy:
     self.tenets = [] if "tenets" not in kwargs else kwargs["tenets"];
     self.tags = [] if "tags" not in kwargs else kwargs["tags"];
     self.LoRa = "" if "LoRa" not in kwargs else kwargs["LoRa"];
-    self.model_name = "" if "model_name" not in kwargs else kwargs["model_name"];
+    self.modelName = "" if "modelName" not in kwargs else kwargs["modelName"];
     self.temperature = -1 if "temperature" not in kwargs else kwargs["temperature"];
     
     self.extended_core = "";
@@ -74,23 +72,22 @@ class Proxy:
 
   def LoadLora(self):
     if(globalNexus.CortexModel.params['LoRa']!= self.LoRa):
-      globalNexus.deactivate_model(self.model_name)
+      globalNexus.DeactivateModel(self.modelName)
       globalNexus.CortexModel.params['LoRa'] = self.LoRa
   
 
   def GenerateAnswer(self, prompt, shard=None, contextCallback = None, grammar = "",
                      max_tokens = 512):
 
-      if(globalNexus.CortexModel_name != self.model_name):
-        globalNexus.load_model(self.model_name)
+      if(globalNexus.CortexModelName != self.modelName):
+        globalNexus.LoadModel(self.modelName)
 
       if(shard!='' and shard!=None):
+        globalNexus.LoadModel(shard)        
         self.context.model = globalNexus.ShardModels[shard]
       else:
         self.context.model = globalNexus.CortexModel
-        if(grammar):
-          globalNexus.load_grammar(grammar)
-        
+         
       self.context.model.activate()
       
       self.context.SetSystemMessage(self.GenerateSystem())
@@ -108,9 +105,9 @@ class Proxy:
       localContext = [x.GetDictionary() for x in localContext]
       
       if(shard!='' and shard!=None):
-        answer = globalNexus.generate_completion_shard(localContext = localContext, model_name=shard, max_tokens = max_tokens)
+        answer = globalNexus.GenerateShardCompletion(localContext = localContext, modelName=shard, max_tokens = max_tokens, grammar=grammar)
       else:
-        answer = globalNexus.generate_completion_cortex(localContext = localContext, max_tokens = max_tokens)
+        answer = globalNexus.GenerateCompletionCortex(localContext = localContext, max_tokens = max_tokens, grammar=grammar)
 
       self.context.AppendAnswer(role=self.name, answer=answer)
       cognitiveSystem.RunProcesses(proxy=self, context="afterGenerateAnswer")
@@ -217,10 +214,9 @@ class Proxy:
     
     
   def exitSubContext(self):
-    context = self.context
-    if(context.parentContext):
+    if(self.context.parentContext):
       print(f"exiting context {self.context.contextID} to context {self.context.parentContext.contextID}")    
-      self.context = context.parentContext
+      self.context = self.context.parentContext
       return self.context
   
   

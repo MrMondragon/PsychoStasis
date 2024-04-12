@@ -21,7 +21,7 @@ try:
 except:
     llama_cpp_cuda_tensorcores = None
     
-from Base_model import Base_model
+from BaseModel import BaseModel
 
 lora_path="LoRa/"
     
@@ -39,9 +39,9 @@ def custom_token_ban_logits_processor(token_ids, logits):
 def get_max_localContext_length(params):
     return params['truncation_length'] - params['max_new_tokens']  
     
-class GGUF_model(Base_model):
-    def __init__(self, model_name, **kwargs) -> None:
-        super().__init__(model_name, **kwargs)
+class GGUFModel(BaseModel):
+    def __init__(self, modelName, **kwargs) -> None:
+        super().__init__(modelName, **kwargs)
         ##
         self.params['cpu'] = False if 'cpu' not in self.params else self.params['cpu']
         self.params['tensorcores'] = False if 'tensorcores' not in self.params else self.params['tensorcores']
@@ -137,7 +137,7 @@ class GGUF_model(Base_model):
                 'rope_freq_scale': 1.0 / self.params['compress_pos_emb'],
                 'chat_format': self.params['chat_format'],
             }            
-            
+            print(params)
             self.model = Llama(**params)
             self.tokenizer = self.model
             if(cache_capacity > 0):
