@@ -89,7 +89,8 @@ class Nexus(object):
                 self.CortexModelName = model.modelName
             else:
                 self.ShardModels[modelName] = model
-                self.ShardModels[modelName].deactivate()
+                if("keep_alive" not in model.params):
+                    self.ShardModels[modelName].deactivate()
 
 
     def UnloadModel(self, modelName:str):
@@ -138,7 +139,7 @@ class Nexus(object):
         self.LoadModel(modelName)
         self.ActivateModel(modelName)
         
-        if self.ShardModels[modelName].params["supportsGrammar"]:
+        if "supports_grammar" in self.ShardModels[modelName].params:
             self.CortexModel.params["grammar_string"] = grammar        
             
         result = self.ShardModels[modelName].generate(localContext, callback, max_tokens=max_tokens)

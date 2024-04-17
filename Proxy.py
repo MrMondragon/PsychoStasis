@@ -82,7 +82,7 @@ class Proxy:
       if(globalNexus.CortexModelName != self.modelName):
         globalNexus.LoadModel(self.modelName)
 
-      if(shard!='' and shard!=None):
+      if(shard):
         globalNexus.LoadModel(shard)        
         self.context.model = globalNexus.ShardModels[shard]
       else:
@@ -104,7 +104,7 @@ class Proxy:
       localContext = self.context.getRelevantContext(prompt=prompt, contextCallback = contextCallback)
       localContext = [x.GetDictionary() for x in localContext]
       
-      if(shard!='' and shard!=None):
+      if(shard):
         answer = globalNexus.GenerateShardCompletion(localContext = localContext, modelName=shard, max_tokens = max_tokens, grammar=grammar)
       else:
         answer = globalNexus.GenerateCompletionCortex(localContext = localContext, max_tokens = max_tokens, grammar=grammar)

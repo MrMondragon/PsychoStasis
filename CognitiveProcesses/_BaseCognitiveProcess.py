@@ -9,11 +9,9 @@ class BaseCognitiveProcess(object):
   def __init__(self, **kwargs) -> None:
     self.DecisoryStatement = "" if "DecisoryStatement" not in kwargs else kwargs["decisoryStatement"] 
     self.Shard = None if "Shard" not in kwargs else kwargs["shard"]
-    if(self.Shard):
-      globalNexus.LoadModel(self.Shard)
     self.Contexts = [] if "contexts" not in kwargs else kwargs["contexts"]
     self.SubProcesses = [] if "subProcesses" not in kwargs else kwargs["subProcesses"]
-    self.frequency = -1 if "frequency" not in kwargs else kwargs["frequency"]
+    self.frequency = 50 if "frequency" not in kwargs else kwargs["frequency"]
     self.Name = "name"
     self.ShouldRun = True if "shouldRun" not in kwargs else kwargs["shouldRun"]
     self.proxy= None

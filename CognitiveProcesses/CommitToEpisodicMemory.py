@@ -15,7 +15,7 @@ class CommitToEpisodicMemory(BaseCognitiveProcess):
     self.shouldRun = True
     self.Name = "CommitToEpisodicMemory"
     self.contexts = ["afterMessageReceived"] if "contexts" not in kwargs else kwargs["contexts"]
-    self.frequency = 0 if "frequency" not in kwargs else kwargs["frequency"]
+    self.frequency = 0 if "frequency" not in kwargs else kwargs["frequency"] #10
     self.shouldRun = True if "shouldRun" not in kwargs else kwargs["shouldRun"]
     self.common = True
     self.priority = 100
@@ -42,7 +42,8 @@ class CommitToEpisodicMemory(BaseCognitiveProcess):
                                                 role=role,
                                                 proxy = self.proxy.name,
                                                 next=nxt,
-                                                previous=previous)
+                                                previous=previous,
+                                                id = message.id)
       documents.append(message.content)
       ids.append(message.id)
       metadata.append(data)

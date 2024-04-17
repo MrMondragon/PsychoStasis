@@ -40,8 +40,7 @@ class Context(object):
     
     if(totalTokens > self.windowSize):
       tokenCount = 0
-      tokenCount += longTermMemory.GetRecollectionContextSize(maxSize=self.windowSize//2)
-      
+            
       if(self.systemMessage):
         tokenCount += self.systemMessage.tokensSize
       
@@ -77,10 +76,6 @@ class Context(object):
       
     if(prompt):
       self.AppendMessage(prompt, role="user", roleName = self.userName)
-    
-    if(longTermMemory.GetRecollectionContextSize() > 0):
-      recollection = longTermMemory.GetRecollectionContext(maxSize=self.windowSize/2)
-      relevantContext.extend(list(map(lambda x: ContextEntry(role="system", content=x, roleName="system", context=self), recollection)))
     
     if(contextCallback):
       relevantContext.extend(contextCallback())
@@ -128,7 +123,9 @@ class Context(object):
       self.messageHistory.append(messageObj)
       if(self.verbose):
         print(f"Message: {self.lastMessageTxt}")
-    return messageObj
+      return messageObj
+    else:
+      return None
   
   
   def AppendAnswer(self, role, answer):

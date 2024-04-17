@@ -1,3 +1,48 @@
+###############################################################
+  ####################### Recollection ##########################
+  ###############################################################     
+  def GetRecollectionContext(self, maxSize=1024):
+    if(self.recollectionContext):
+      ctx = deque()
+      self.recollectionContext.sort(key = lambda x : x["priority"])
+      ctx.extend(self.recollectionContext)
+      
+      while (sum(x["tokenSize"] for x in ctx) < maxSize):
+        ctxSize += ctx[0]["tokenSize"]
+        ctx.pop()
+      
+      self.recollectionContext = list(ctx) 
+      return list(map(lambda x: x.text, self.recollectionContext)) 
+    else:
+      return []
+    
+  def GetRecollectionContextSize(self, maxSize=1024):
+    return len(self.GetRecollectionContext(maxSize=maxSize))
+    
+  def ResetRecollectionContext(self):
+    self.recollectionContext.clear()
+    self.recollectionQueries.clear()
+    
+  def AddToRecollectionContext(self, text, priority, query, metadata):
+    if((query not in self.recollectionQueries) and (text not in map(lambda x: x["text"], self.recollectionContext))):
+      self.recollectionQueries.append(text)
+      tokenSize = globalNexus.GetTokenCount(text)    
+      self.recollectionContext.append({"text":text, "priority":priority, "tokenSize": tokenSize, "metadata": metadata})
+  
+  def ReprioritizeRecollectionContext(self, query):
+    pass
+  
+  def Recall(self, query, clear=False, RecollectionLevel = RecollectionLevel.Abstract):
+    if(clear):
+      self.ResetRecollectionContext()
+      
+##
+
+
+
+
+
+
 Context memory is not a collection!!
 it is a message list with priority which is manipulated by
 the cognitive system
@@ -70,21 +115,21 @@ distance based information is inserted with the formula
     
     #so, the order of tasks is:
     #OK# CHECK TO SEE IF THE MEMORY PROCESSES ARE USING IDENTIFICATORS CORRECTLY!!!
-    ### Test and validate the new memory structure part by part
-    ### Entity memory needs to add and deduplicate to the entryIds!!!
+    #OK# Test and validate the new memory structure part by part
+    #OK# Entity memory needs to add and deduplicate to the entryIds!!!
     #OK# Alter the consolidation process to implement hierarchy
-      # Implement thematization of the conversation, both here and in a dedicated cog proc
+      #OK# Implement thematization of the conversation, both here and in a dedicated cog proc
       # Implmement the ingestion process
       # Implement the recollection process
       # Implement Authotritative Commands for both
       # Implement autonomous shallow Abstract recollection
-      # Refactor inner thoughts out
+      #OK# Refactor inner thoughts out
       
-    ### To be considered:
+    #OK# To be considered:
       # episodic/textual memory => consolidated memory => Abstract memory => documental memory
       # sentiment memory ~ entity memory
     
-    ### Entity memory needs to add and deduplicate to the entryIds
+    #OK# Entity memory needs to add and deduplicate to the entryIds
     
     #while we're at it
       # From pyramid of thoughts comes prompt scripting and a prompt script runner cog proc

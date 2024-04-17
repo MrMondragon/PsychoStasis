@@ -1,4 +1,5 @@
 import sys
+import re
 from pathlib import Path
 import grammars
 sys.path.insert(0, str(Path("..")))
@@ -15,11 +16,13 @@ class CommitToAbstractMemory(BaseCognitiveProcess):
     self.shouldRun = True
     self.Name = "CommitToAbstractMemory"
     self.contexts = ["afterMessageReceived"] if "contexts" not in kwargs else kwargs["contexts"]
-    self.frequency = 0 if "frequency" not in kwargs else kwargs["frequency"]
+    self.frequency = 0 if "frequency" not in kwargs else kwargs["frequency"] #50
     self.shouldRun = True if "shouldRun" not in kwargs else kwargs["shouldRun"]
     self.common = True
     self.priority = 120 # so that it runs after episodic and consolidated
     self.factCount = 5
+    self.Shard = "ObjectiveDecisory.GGUF"
+    globalNexus.LoadModel(self.Shard)
     
   def _internalRun(self, localContext):
     super()._internalRun()
@@ -32,7 +35,7 @@ class CommitToAbstractMemory(BaseCognitiveProcess):
     #generate N facts about the collection of summaries
     self.proxy.enterSubContext(copySystem=False)
     self.proxy.context.AppendMessage(role = "user", roleName=self.proxy.context.userName, message=summaries)
-    facts = self.proxy.GenerateAnswer(prompt=f"Cite {self.factCount} facts you can gather from this conversation. Do not introduce yourself. Answer with the facts only!", grammar=grammars.list)
+    facts = self.proxy.GenerateAnswer(shard = self.Shard, prompt=f"Cite {self.factCount} facts you can gather from this conversation. Do not introduce yourself. Answer with the facts only!", grammar=grammars.list)
     self.proxy.exitSubContext()
     
     facts = facts.content
@@ -40,8 +43,18 @@ class CommitToAbstractMemory(BaseCognitiveProcess):
       facts = facts.splitlines()
     else:
       facts = facts.split(', ')
-    facts = [fact.strip('- ') for fact in facts]
-    print(facts)
+      
+    factCount = len(facts)
+      
+    for i in range(factCount): 
+      fact = facts[i]
+      pattern = r'\d+\S\s'
+      match = re.search(pattern, fact)
+      if match:
+        fact = fact[match.end():]
+      fact = fact.strip('- ')
+      facts[i] = fact      
+
     
           
     #remove the begining in case the model has introduced the facts
@@ -66,10 +79,11 @@ class CommitToAbstractMemory(BaseCognitiveProcess):
       #if no distance was found or the distance is higher than the threshold, add the fact to the memory
       if((distance >= 1.2) or (distance == -1)):
         data = longTermMemory.CreateSimpleMetadata(conversationId=conversationId,
-                                                proxy=self.proxy.name)
+                                                proxy=self.proxy.name, id="")
         data["summaryIds"] = summaryIds
         documents.append(fact)
         factId = f"abst-{uuid.uuid4()}"
+        data["id"]=factId
         ids.append(factId)
         metadata.append(data)
       else:

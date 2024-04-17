@@ -12,16 +12,12 @@ invalidChars = ["#", "@", "!", "$", "%", "^", "&", "*", "(", ")", "-", "_", "=",
 positiveStr = " ".join(positive)
 negativeStr = " ".join(negative)
 
-basePriority = 500
 
 class LongTermMemory(object):
   def __init__(self):
     self.path = './Memory/'
     self.persistent = False
     self.client = PersistentClient(self.path) if(self.persistent) else Client()
-    
-    self.recollectionContext : List[MemoryEntry] = []
-    self.recollectionQueries : List[str] = []
   
     ###############################################################
     ################### Discriminatory Memories ###################
@@ -47,7 +43,7 @@ class LongTermMemory(object):
   ###############################################################
   ################### Specialized Metadata ######################
   ###############################################################     
-  def CreateEpisodicMetadata(self, conversationId, role, proxy,  previous, next):
+  def CreateEpisodicMetadata(self, conversationId, role, proxy,  previous, next, id):
     timestamp = int(time.mktime(datetime.datetime.now().timetuple()))
     metadata={
           "conversationId": str(conversationId), 
@@ -56,17 +52,19 @@ class LongTermMemory(object):
           "timestamp": timestamp,
           "previous": previous,
           "next": next,
-          "parent": ""            
+          "parent": "",
+          "id": id
         }
     return metadata
   
-  def CreateSimpleMetadata(self, conversationId, proxy):
+  def CreateSimpleMetadata(self, conversationId, proxy, id):
     timestamp = int(time.mktime(datetime.datetime.now().timetuple()))
     metadata={
         "conversationId": str(conversationId), 
         "proxy": proxy,
         "timestamp": timestamp,
-        "parent": ""
+        "parent": "",
+        "id": id
       }
     
     return metadata
@@ -121,14 +119,15 @@ class LongTermMemory(object):
     return documents
     
     
-  def GetItemsByTreshold(self, proxy, memoryLevel, where, threshold):
-    query = self.QueryAll(proxy, memoryLevel, where)
+  def GetItemsByTreshold(self, proxy, memoryLevel,  threshold, queryText = "", where = {}) -> List[MemoryEntry]:
+    query = self.QueryAll(proxy, memoryLevel, where, queryTexts=[queryText])
     ids = query["ids"][0]
     count = len(ids)
     list = []
     for i in range(count):
-      if query["distances"][0][i] <= threshold:
-        list.append({"id": ids[i], "distance": query["distances"][0][i]})
+      if (query["distances"][0][i] <= threshold) or (threshold == 0):
+        entry = MemoryEntry.FromMemory(context = proxy.context, id = ids[i], content = query["documents"][0][i], metadata = query["metadatas"][0][i], distance=query["distances"][0][i])
+        list.append(entry)
     return list
   
 
@@ -181,45 +180,7 @@ class LongTermMemory(object):
       self.client.delete_collection(f"{proxy.name}_{level}")
       
 
-  ###############################################################
-  ####################### Recollection ##########################
-  ###############################################################     
-  def GetRecollectionContext(self, maxSize=1024):
-    if(self.recollectionContext):
-      ctx = deque()
-      self.recollectionContext.sort(key = lambda x : x["priority"])
-      ctx.extend(self.recollectionContext)
-      
-      while (sum(x["tokenSize"] for x in ctx) < maxSize):
-        ctxSize += ctx[0]["tokenSize"]
-        ctx.pop()
-      
-      self.recollectionContext = list(ctx) 
-      return list(map(lambda x: x.text, self.recollectionContext)) 
-    else:
-      return []
-    
-  def GetRecollectionContextSize(self, maxSize=1024):
-    return len(self.GetRecollectionContext(maxSize=maxSize))
-    
-  def ResetRecollectionContext(self):
-    self.recollectionContext.clear()
-    self.recollectionQueries.clear()
-    
-  def AddToRecollectionContext(self, text, priority, query, metadata):
-    if((query not in self.recollectionQueries) and (text not in map(lambda x: x["text"], self.recollectionContext))):
-      self.recollectionQueries.append(text)
-      tokenSize = globalNexus.GetTokenCount(text)    
-      self.recollectionContext.append({"text":text, "priority":priority, "tokenSize": tokenSize, "metadata": metadata})
-  
-  def ReprioritizeRecollectionContext(self, query):
-    pass
-  
-  def Recall(self, query, clear=False, RecollectionLevel = RecollectionLevel.Abstract):
-    if(clear):
-      self.ResetRecollectionContext()
-      
-###############################################################
+#############################################################
 ################## Long Term Memory Object ####################
 ###############################################################
 longTermMemory = LongTermMemory()    

@@ -34,4 +34,6 @@ class ContextEntry(object):
       "id": self.id,
     }
     
+  def __str__(self) -> str:
+    return str(self.GetDictionary())
     
