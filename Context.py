@@ -7,7 +7,7 @@ from Nexus import globalNexus
 from ShortTermMemory import shortTermMemory
 from ContextEntry import ContextEntry
 from typing import List
-from Logger import globalLogger
+from Logger import globalLogger, LogLevel
   
 class Context(object):
   def __init__(self, proxy) -> None:
@@ -99,7 +99,7 @@ class Context(object):
     relevantContext.extend(historyWindow)
     
     if(self.verbose):
-      globalLogger.log(f"Context: {json.dumps(relevantContext, indent=2)}")
+      globalLogger.log(logLevel=LogLevel.globalLog, message=f"Context: {json.dumps(relevantContext, indent=2)}")
       
     if(start and end):
       relevantContext = relevantContext[start:end]
@@ -137,7 +137,7 @@ class Context(object):
       self.linkMessage(messageObj)
       self.messageHistory.append(messageObj)
       if(self.verbose):
-        globalLogger.log(f"Message: {self.lastMessageTxt}")
+        globalLogger.log(logLevel=LogLevel.globalLog, message=f"Message: {self.lastMessageTxt}")
       return messageObj
     else:
       return None
@@ -150,7 +150,7 @@ class Context(object):
     self.lastAnswerObj = msgObject
     self.lastAnswerTxt = msgObject.content
     if(self.verbose):
-      globalLogger.log(f"Answer: {self.lastAnswerTxt}")
+      globalLogger.log(logLevel=LogLevel.globalLog, message=f"Answer: {self.lastAnswerTxt}")
     return msgObject
   
 
@@ -171,7 +171,7 @@ class Context(object):
     if(len(history)> frequency):
       for message in history:
         message.CommitProcess(processName)
-      globalLogger.log(f"{processName} uncommited: len(history) -- frequency: {frequency}")
+      globalLogger.log(logLevel=LogLevel.globalLog, message=f"{processName} uncommited: len(history) -- frequency: {frequency}")
       
       return history
     else:
@@ -187,11 +187,11 @@ class Context(object):
     
   def RemoveLast(self):
     lastMsg = self.messageHistory.pop()
-    if(lastMsg["role"] != "user"):
+    if(lastMsg.role != "user"):
       self.lastAnswerObj = None
     else:
-      self.lastMessageTxt = None
-    globalLogger.log("Last message removed")
+      self.lastMessageObj = None
+    globalLogger.log(logLevel=LogLevel.authoritativeLog, message=f"Message removed: {lastMsg.content}")
 
   
   def SwitchUp(self, n, l):

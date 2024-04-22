@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 sys.path.insert(0, str(Path(".")))
 from ContextEntry import ContextEntry
-from Logger import globalLogger
+from Logger import globalLogger, LogLevel
 from transformers import AutoTokenizer
 from pathlib import Path
 from transformers import pipeline
@@ -52,13 +52,13 @@ class BaseModel:
         if(not self.active):
             self.load()
             self.active = True
-            globalLogger.log(f"model {self.modelName} activated")
+            globalLogger.log(logLevel=LogLevel.globalLog, message=f"model {self.modelName} activated")
         
     def deactivate(self):
         if(self.active):
             self.unload()
             self.active = False
-            globalLogger.log(f"model {self.modelName} deactivated")
+            globalLogger.log(logLevel=LogLevel.globalLog, message=f"model {self.modelName} deactivated")
         
     def unload(self):
         del self.model

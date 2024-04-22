@@ -3,7 +3,7 @@ from Nexus import NexusEmbeddingFunction, globalNexus
 import datetime, time
 from MemoryTypes import RecollectionLevel, MemoryLevel, MemoryEntry
 from typing import List
-from Logger import globalLogger
+from Logger import globalLogger, LogLevel
 
 positive = ["yes", "sure", "ok", "okay", "yeah", "yup", "yep", "yea", "yah", "yas", "ya", "yap"]
 negative = ["no", "nope", "nah", "nay", "nope", "nah", "nay"]
@@ -146,7 +146,7 @@ class LongTermMemory(object):
       conversations = conversationID.split('|')
     
     entry = memory.get(themeOrEntity)
-    globalLogger.log(entry)
+    globalLogger.log(logLevel=LogLevel.globalLog, message=entry)
 
     if(len(entry["ids"][0]) == 0):
       memory.add(documents=[themeOrEntity], ids=[themeOrEntity], metadatas=[{"conversations": conversationID}])

@@ -9,7 +9,8 @@ from CognitiveSystem import cognitiveSystem
 from AuthoritativeSystem import authoritativeSystem
 from ContextEntry import ContextEntry
 from typing import List
-from Logger import globalLogger
+from Logger import globalLogger, LogLevel
+import traceback
 
 proxy_path = 'Proxies' 
 
@@ -30,7 +31,7 @@ class Proxy:
     # Build the pattern for glob function
     pattern = f"{name}.proxy" if "pattern" not in kwargs else kwargs["pattern"]
     path = os.path.join(workPath, pattern)
-    print(path)
+    globalLogger.log(message=path, logLevel=LogLevel.globalLog)
     if(os.path.isfile(path)):
     # Scan all '.config' files in 'models' directory
       file_list = glob.glob(path)
@@ -48,7 +49,7 @@ class Proxy:
     self.tenets = [] if "tenets" not in kwargs else kwargs["tenets"];
     self.tags = [] if "tags" not in kwargs else kwargs["tags"];
     self.LoRa = "" if "LoRa" not in kwargs else kwargs["LoRa"];
-    print(kwargs)
+    globalLogger.log(message=kwargs, logLevel=LogLevel.globalLog)
     self.modelName = "" if "modelName" not in kwargs else kwargs["modelName"];
     self.temperature = 1 if "temperature" not in kwargs else kwargs["temperature"];
     
@@ -79,44 +80,48 @@ class Proxy:
 
   def GenerateAnswer(self, prompt, shard=None, contextCallback = None, grammar = "",
                      max_tokens = 512):
+      try:
+        if(globalNexus.CortexModelName != self.modelName):
+          globalNexus.LoadModel(self.modelName)
 
-      if(globalNexus.CortexModelName != self.modelName):
-        globalNexus.LoadModel(self.modelName)
-
-      if(shard):
-        globalNexus.LoadModel(shard)        
-        self.context.model = globalNexus.ShardModels[shard]
-      else:
-        self.context.model = globalNexus.CortexModel
-         
-      self.context.model.activate()
-      
-      self.context.SetSystemMessage(self.GenerateSystem())
-
-      if(self.temperature != -1):
-        globalNexus.CortexModel.params["temperature"] = self.temperature
+        if(shard):
+          globalNexus.LoadModel(shard)        
+          self.context.model = globalNexus.ShardModels[shard]
+        else:
+          self.context.model = globalNexus.CortexModel
+          
+        self.context.model.activate()
         
-      if(shard==None):
-        self.LoadLora();   
-      
-      self.context.proxy = self
-      
-      cognitiveSystem.RunProcesses(proxy=self, context="beforeGenerateAnswer")    
-      localContext = self.context.getRelevantContext(prompt=prompt, contextCallback = contextCallback)
-      localContext = [x.GetDictionary() for x in localContext]
-      
-      if(shard):
-        answer = globalNexus.GenerateShardCompletion(localContext = localContext, modelName=shard, max_tokens = max_tokens, grammar=grammar)
-      else:
-        answer = globalNexus.GenerateCompletionCortex(localContext = localContext, max_tokens = max_tokens, grammar=grammar)
+        self.context.SetSystemMessage(self.GenerateSystem())
 
-      self.context.AppendAnswer(role=self.name, answer=answer)
-      cognitiveSystem.RunProcesses(proxy=self, context="afterGenerateAnswer")
-      
-      if(self.context.parentContext == None):
-        self.commitContext()
-      
-      return self.context.lastAnswerObj
+        if(self.temperature != -1):
+          globalNexus.CortexModel.params["temperature"] = self.temperature
+          
+        if(shard==None):
+          self.LoadLora();   
+        
+        self.context.proxy = self
+        
+        cognitiveSystem.RunProcesses(proxy=self, context="beforeGenerateAnswer")    
+        localContext = self.context.getRelevantContext(prompt=prompt, contextCallback = contextCallback)
+        localContext = [x.GetDictionary() for x in localContext]
+        
+        if(shard):
+          answer = globalNexus.GenerateShardCompletion(localContext = localContext, modelName=shard, max_tokens = max_tokens, grammar=grammar)
+        else:
+          answer = globalNexus.GenerateCompletionCortex(localContext = localContext, max_tokens = max_tokens, grammar=grammar)
+
+        self.context.AppendAnswer(role=self.name, answer=answer)
+        cognitiveSystem.RunProcesses(proxy=self, context="afterGenerateAnswer")
+        
+        if(self.context.parentContext == None):
+          self.commitContext()
+        
+        return self.context.lastAnswerObj
+      except Exception as e:
+        globalLogger.log(message = f"Error in proxy {self.name} while generating an answer: {e}", logLevel = LogLevel.errorLog)
+        globalLogger.log(message = traceback.format_exc(), logLevel = LogLevel.errorLog)
+        
 
   
   def GenerateSystem(self, innerThoughts= False):
@@ -179,7 +184,7 @@ class Proxy:
     
     newContext = Context(self)
     context = self.context
-    globalLogger.log(f"Entering context {newContext.contextID} from context {context.contextID}")
+    globalLogger.log(logLevel=LogLevel.globalLog, message=f"Entering context {newContext.contextID} from context {context.contextID}")
     if(resetCortex):
       globalNexus.CortexModel.reset()      
     newContext.userName = context.userName  
@@ -213,7 +218,7 @@ class Proxy:
     
   def exitSubContext(self):
     if(self.context.parentContext):
-      globalLogger.log(f"exiting context {self.context.contextID} to context {self.context.parentContext.contextID}")    
+      globalLogger.log(logLevel=LogLevel.globalLog, message=f"exiting context {self.context.contextID} to context {self.context.parentContext.contextID}")    
       self.context = self.context.parentContext
       return self.context
   
@@ -226,7 +231,7 @@ class Proxy:
     self.context.proxy = None
     with shelve.open(str(self.memoryPath)) as memory:
       memory[self.name] = self.context 
-      globalLogger.log("context commited")
+      globalLogger.log(logLevel=LogLevel.globalLog, message="context commited")
     self.context.model = model
     self.context.proxy = self
       

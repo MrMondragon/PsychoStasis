@@ -16,7 +16,7 @@ from SummarizationModel import SummarizationModel
 from NERModel import NERModel
 from SentimentModel import SentimentModel
 import nvidia_smi
-from Logger import globalLogger
+from Logger import globalLogger, LogLevel
 
 model_path = 'models/' 
 lora_path = 'lora/' 
@@ -85,14 +85,14 @@ class Nexus(object):
 
     
     def LoadModel(self, modelName,  **kwargs):
-        globalLogger.log("loading model " + modelName)
+        globalLogger.log(logLevel=LogLevel.globalLog, message="loading model " + modelName)
         if (modelName != self.CortexModelName) and (modelName not in self.ShardModels):
             data, file_name  = Nexus.GetModelData(modelName)
             core = data["core"]
             model_class = Nexus.GetModelClass(file_name)
             # Pass kwargs directly to the constructor
             model = model_class(modelName, **kwargs)
-            globalLogger.log("model configured")
+            globalLogger.log(logLevel=LogLevel.globalLog, message="model configured")
             if core:
                 model.active = False
                 self.CortexModel = model
@@ -138,14 +138,14 @@ class Nexus(object):
 
  
     def GenerateCompletionCortex(self, localContext, callback = None, max_tokens = 0, grammar = ""):
-        globalLogger.log(f"performing inference with {self.CortexModelName}")
+        globalLogger.log(logLevel=LogLevel.globalLog, message=f"performing inference with {self.CortexModelName}")
         self.CortexModel.activate()
         self.CortexModel.params["grammar_string"] = grammar        
         return self.CortexModel.generate(localContext, callback, max_tokens=max_tokens)
 
     
     def GenerateShardCompletion(self, localContext, callback = None, max_tokens = 0, modelName:str = None, grammar = ""):
-        globalLogger.log(f"performing inference with {modelName}")
+        globalLogger.log(logLevel=LogLevel.globalLog, message=f"performing inference with {modelName}")
         self.LoadModel(modelName)
         self.ActivateModel(modelName)
         

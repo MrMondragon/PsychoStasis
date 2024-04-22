@@ -2,7 +2,7 @@ import gradio as gr
 from Proxy import Proxy
 from Nexus import globalNexus, Nexus
 from PIL import Image, ImageOps
-from Logger import globalLogger
+from Logger import globalLogger, LogLevel
 import os
 
 lora_path = 'lora\\' 
@@ -22,7 +22,7 @@ class BirthingPod(object):
       workPath = os.path.join(cwd, lora_path)
       workPath = os.path.join(workPath, lora)
       self.activeProxy.LoRa = workPath
-    globalLogger.log(f"Created proxy {self.activeProxy.name} with model {self.activeProxy.modelName} and lora {self.activeProxy.LoRa}")
+    globalLogger.log(logLevel=LogLevel.globalLog, message=f"Created proxy {self.activeProxy.name} with model {self.activeProxy.modelName} and lora {self.activeProxy.LoRa}")
        
   def setPrimer(self, primer):
     self.activeProxy.primer = primer

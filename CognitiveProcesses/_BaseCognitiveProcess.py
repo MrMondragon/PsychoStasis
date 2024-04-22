@@ -4,7 +4,7 @@ sys.path.insert(0, str(Path("..")))
 from Nexus import globalNexus
 from LongTermMemory import longTermMemory
 import grammars
-from Logger import globalLogger
+from Logger import globalLogger, LogLevel
 
 
 class BaseCognitiveProcess(object):
@@ -22,12 +22,12 @@ class BaseCognitiveProcess(object):
   
   def Run(self, proxy):
     self.proxy = proxy
-    globalLogger.log(f"Running {self.Name} with local context {len(self.localContext)} and frequency = {self.frequency}")
+    globalLogger.log(logLevel=LogLevel.cognitiveLog, message=f"Running {self.Name} with local context {len(self.localContext)} and frequency = {self.frequency}")
     
     if(self.frequency == -1):
       return    
     if(self.ShouldRun):
-      globalLogger.log(f"Engaging in {self.Name} Cognitive Process")
+      globalLogger.log(logLevel=LogLevel.cognitiveLog, message=f"Engaging in {self.Name} Cognitive Process")
       result = self._internalRun()
     else:
       result = None
@@ -44,11 +44,11 @@ class BaseCognitiveProcess(object):
     
   def _internalRun(self):
     if(self.proxy.context.verbose):
-      globalLogger.log(f"Internal execution for {self.Name}")
+      globalLogger.log(logLevel=LogLevel.cognitiveLog, message=f"Internal execution for {self.Name}")
       
   def getUncommitedContext(self):
     context = self.proxy.context 
-    globalLogger.log(f"Getting uncommited messages for {self.Name} - frequency = {self.frequency}")
+    globalLogger.log(logLevel=LogLevel.cognitiveLog, message=f"Getting uncommited messages for {self.Name} - frequency = {self.frequency}")
     ## for testing purposes
     if(self.frequency == 0):
       return context.messageHistory

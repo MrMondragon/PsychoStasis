@@ -3,7 +3,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path("..")))
 import re
 from _Command import _Command
-from Logger import globalLogger
+from Logger import globalLogger, LogLevel
 
 class ChatCommands(object):
   def __init__(self, **kwargs):
@@ -11,24 +11,32 @@ class ChatCommands(object):
   
   def RegisterCommands(self, authoritativeSystem):
     authoritativeSystem.Commands["<<"] = _Command(func = self.removeLast, description = "remove last context message")
+    authoritativeSystem.Commands[">>"] = _Command(func = self.regen, description = "regenerate last answer")
     authoritativeSystem.Commands[r"@\w+"] = _Command(func = self.at, description = "switch to speaker. @name, @all, @others, @any")
     authoritativeSystem.Commands[r"/A\d+(A\d+)?"] = _Command(func = self.SwitchUp, description = "switch up context")
     authoritativeSystem.Commands[r"/V\d+(V\d+)?"] = _Command(func = self.SwitchDown, description = "switch down context")
     authoritativeSystem.Commands[r"/new"] = _Command(func = self.newContext, description = "start a new context")
-    
   
   def removeLast(self, prompt, command, proxy):
-    globalLogger.log(f"removing last message: {prompt}")
+    globalLogger.log(logLevel=LogLevel.authoritativeLog, message=f"removing last message: {prompt}")
     if(prompt.startswith("<<<<")):
       proxy.context.RemoveLast() 
       proxy.context.RemoveLast() 
-      globalLogger.log("last 2 messages removed")
+      globalLogger.log(logLevel=LogLevel.authoritativeLog, message="last 2 messages removed")
     elif (prompt.startswith("<<")):
       proxy.context.RemoveLast() 
-      globalLogger.log("last message removed")
+      globalLogger.log(logLevel=LogLevel.authoritativeLog, message="last message removed")
     proxy.commitContext()     
     proxy.shouldGenerate = False
     return ""
+  
+  def regen(self, prompt, command, proxy):
+    proxy.context.RemoveLast()
+    proxy.context.RemoveLast() 
+    msg = proxy.context.lastMessageObj
+    proxy.ReceiveMessage(message = msg.content, role = msg.role, roleName = msg.roleName)
+    return ""
+    
     
   def at(self, prompt, command, proxy):
     atProxy = command
