@@ -2,7 +2,7 @@ from Proxy import Proxy
 from Nexus import globalNexus
 from AuthoritativeSystem import authoritativeSystem
 from CognitiveSystem import cognitiveSystem
-
+from Logger import globalLogger
 import os
 
 proxy_path = 'Proxies/' 
@@ -16,12 +16,12 @@ class Collective(Proxy):
     self.proxies = {}
     if(proxies):
       for proxy in proxies:
-        print(f"Loading proxy: {proxy}")
+        globalLogger.log(f"Loading proxy: {proxy}")
         self.proxies[proxy] = Proxy(proxy, collective=self)
         self.proxies[proxy].collective = self;
         self.proxies[proxy].context = self.context;
         if(self.activeSpeaker == None):
-          print(f"Active Speaker: {proxy}")
+          globalLogger.log(f"Active Speaker: {proxy}")
           self.activeSpeaker = self.proxies[proxy]
         
     self.lastSpeaker = None

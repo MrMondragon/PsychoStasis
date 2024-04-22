@@ -1,5 +1,6 @@
 from enum import Enum
 import math
+from ContextEntry import ContextEntry
 
 
 class RecollectionLevel(Enum):
@@ -31,6 +32,12 @@ class MemoryEntry:
     self.contextid = contextid
     self.distance = distance
     self.id = id
+    
+  
+  def toContentEntry(self, context):
+    role = self.metadata["proxy"]
+    return ContextEntry(role = role, content = self.content, reoleName = role,
+                        context=context, id=self.id)
     
   @classmethod
   def FromMemory(cls, id, content, metadata, distance, context):

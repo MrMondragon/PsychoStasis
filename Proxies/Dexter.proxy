@@ -12,7 +12,7 @@
           ],
       "tags":["observer", "assassin", "dark", "avid", "analyst"],
       "modelName": "CBG",
-      "LoRa":"B:/PsychoStasis/Training/DexterCBG.gguf",
+      "LoRa":"B:/PsychoStasis/lora/DexterCBG.gguf",
       "inner_persona":"These are your private thoughts. Here you will will feel free to express your darkest feelings and desires",
       "temperature":0.8,
       "cognitiveProcs":[""],

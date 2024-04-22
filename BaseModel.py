@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 sys.path.insert(0, str(Path(".")))
 from ContextEntry import ContextEntry
-
+from Logger import globalLogger
 from transformers import AutoTokenizer
 from pathlib import Path
 from transformers import pipeline
@@ -44,7 +44,6 @@ class BaseModel:
                         if key not in self.params:
                             self.params[key] = value
                 self.path = data['path']
-                   
     def load(self):
         pass
     
@@ -53,13 +52,13 @@ class BaseModel:
         if(not self.active):
             self.load()
             self.active = True
-            print(f"model {self.modelName} activated")
+            globalLogger.log(f"model {self.modelName} activated")
         
     def deactivate(self):
         if(self.active):
             self.unload()
             self.active = False
-            print(f"model {self.modelName} deactivated")
+            globalLogger.log(f"model {self.modelName} deactivated")
         
     def unload(self):
         del self.model

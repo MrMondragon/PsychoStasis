@@ -6,6 +6,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from pathlib import Path
 from BaseModel import BaseModel
+from Logger import globalLogger
 
 class CausalLM(BaseModel):
     def __init__(self, modelName, **kwargs) -> None:
@@ -35,7 +36,7 @@ class CausalLM(BaseModel):
         for message in localContext:
             prompt += message["role"] + ": " + message["content"]+"\n"
         
-        print(prompt)
+        globalLogger.log(prompt)
         
         device = next(self.model.parameters()).device.type
         
@@ -58,7 +59,7 @@ class CausalLM(BaseModel):
         
         if callback:
             callback(text)
-        print(text)
+        globalLogger.log(text)
         return text
         
         

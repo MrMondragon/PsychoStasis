@@ -5,6 +5,8 @@ import numpy as np
 import torch
 import RoPE
 from callbacks import Iteratorize
+from Logger import globalLogger
+
 
 try:
     import llama_cpp
@@ -92,17 +94,15 @@ class GGUFModel(BaseModel):
     def load(self):
         Llama = self.llama_cpp_lib().Llama
         
-        
-        
         if(self.params['LoRa'] != ""):
             #cwd = os.getcwd()
             #lora_path = os.path.join(cwd, lora_path, self.params['LoRa'])
             Llama.lora_path = self.params['LoRa'] #lora_path            
+            globalLogger.log("LoRa: "+ Llama.lora_path)
         else:
             Llama.lora_path = None
-            
-        print("LoRa: ", Llama.lora_path)
-            
+            globalLogger.log("No LoRa! ")
+        
         LlamaCache = self.llama_cpp_lib().LlamaCache 
 
         cache_capacity = 0
@@ -137,7 +137,7 @@ class GGUFModel(BaseModel):
                 'rope_freq_scale': 1.0 / self.params['compress_pos_emb'],
                 'chat_format': self.params['chat_format'],
             }            
-            print(params)
+            globalLogger.log(params)
             self.model = Llama(**params)
             self.tokenizer = self.model
             if(cache_capacity > 0):

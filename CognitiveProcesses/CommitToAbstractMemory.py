@@ -24,7 +24,7 @@ class CommitToAbstractMemory(BaseCognitiveProcess):
     self.Shard = "ObjectiveDecisory.GGUF"
     globalNexus.LoadModel(self.Shard)
     
-  def _internalRun(self, localContext):
+  def _internalRun(self):
     super()._internalRun()
     conversationId=str(self.proxy.context.contextID)
     globalNexus.BeginShardBatch("Embeddings.Embeddings")
@@ -54,12 +54,12 @@ class CommitToAbstractMemory(BaseCognitiveProcess):
         fact = fact[match.end():]
       fact = fact.strip('- ')
       facts[i] = fact      
-
-    
-          
+         
     #remove the begining in case the model has introduced the facts
-    if(len(facts) > self.factCount):
-      facts = facts[-self.factCount:]
+    #if(len(facts) > self.factCount):
+    #  facts = facts[-self.factCount:]
+    #Not sure about this part after seeing the generated content
+        
     documents = []
     ids = []
     metadata = []      

@@ -1,5 +1,9 @@
 
+Respond the following question in character, as if you were a fictional character, without introducing yourself, in the present tense: How do you feel about this?
 
+*********** Good prompt to query feelings
+
+this is your current state of mind: {answer}. Take it into consideration when answering questions and respond in character
 
 
      

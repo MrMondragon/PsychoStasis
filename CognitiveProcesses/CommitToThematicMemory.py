@@ -25,7 +25,7 @@ class CommitToThematicMemory(BaseCognitiveProcess):
     globalNexus.LoadModel(self.Shard)
     
     
-  def _internalRun(self, localContext):
+  def _internalRun(self):
     super()._internalRun()
     conversationId=str(self.proxy.context.contextID)
     globalNexus.BeginShardBatch("Embeddings.Embeddings")
@@ -57,10 +57,9 @@ class CommitToThematicMemory(BaseCognitiveProcess):
       themes[i] = theme
     
     #remove the begining in case the model has introduced the themes
-    if(len(themes) > self.themeCount):
-      themes = themes[-self.themeCount:]
-          
-    print(themes)
+    #if(len(themes) > self.themeCount):
+      #themes = themes[-self.themeCount:]
+    #Not sure about this part after seeing the generated content
     
     entities = globalNexus.GetNER(facts)
     entities = list(entities.keys())

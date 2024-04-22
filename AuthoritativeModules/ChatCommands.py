@@ -3,6 +3,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path("..")))
 import re
 from _Command import _Command
+from Logger import globalLogger
 
 class ChatCommands(object):
   def __init__(self, **kwargs):
@@ -17,14 +18,14 @@ class ChatCommands(object):
     
   
   def removeLast(self, prompt, command, proxy):
-    print(f"removing last message: {prompt}")
+    globalLogger.log(f"removing last message: {prompt}")
     if(prompt.startswith("<<<<")):
       proxy.context.RemoveLast() 
       proxy.context.RemoveLast() 
-      print("last 2 messages removed")
+      globalLogger.log("last 2 messages removed")
     elif (prompt.startswith("<<")):
       proxy.context.RemoveLast() 
-      print("last message removed")
+      globalLogger.log("last message removed")
     proxy.commitContext()     
     proxy.shouldGenerate = False
     return ""

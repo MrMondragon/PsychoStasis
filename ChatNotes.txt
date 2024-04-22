@@ -1,3 +1,29 @@
+
+
+
+
+
+
+scrollFn = '''
+  document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+  console.log("scrolled");
+'''
+    
+with gr.Blocks() as chat:
+  gr.Markdown("# PsychoStasis")
+  with gr.Row():
+    with gr.Column():
+      with gr.Row():
+        with gr.Column(scale=4, variant='panel'):
+          mainChat = gr.HTML(value = generateHTML(), elem_id="chat_container")
+        with gr.Column(scale=1):
+          placeholder = gr.HTML(value="")          
+          
+      txtPrompt = gr.Textbox(label="Prompt", elem_id="prompt")
+  with gr.Row():  
+    txtPrompt.submit(respond, inputs=[txtPrompt], outputs=[txtPrompt, mainChat]).then(
+        lambda: None, None, None, js=f'() => {{{scrollFn}}}')
+
   Review CommitToMemory
   Accordion controls to
     View and select the active speaker and switch collectives

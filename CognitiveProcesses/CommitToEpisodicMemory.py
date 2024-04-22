@@ -21,14 +21,14 @@ class CommitToEpisodicMemory(BaseCognitiveProcess):
     self.priority = 100
     
     
-  def _internalRun(self, localContext):
+  def _internalRun(self):
     super()._internalRun()
     globalNexus.BeginShardBatch("Embeddings.Embeddings")
     conversationId=self.proxy.context.contextID
     documents = []
     ids = []
     metadata = []
-    for message in localContext:
+    for message in self.localContext:
       if(message.role == "assistant"):
         role = self.proxy.name
       else:

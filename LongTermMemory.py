@@ -1,9 +1,9 @@
 from chromadb import PersistentClient, Client
 from Nexus import NexusEmbeddingFunction, globalNexus
 import datetime, time
-from collections import deque
 from MemoryTypes import RecollectionLevel, MemoryLevel, MemoryEntry
 from typing import List
+from Logger import globalLogger
 
 positive = ["yes", "sure", "ok", "okay", "yeah", "yup", "yep", "yea", "yah", "yas", "ya", "yap"]
 negative = ["no", "nope", "nah", "nay", "nope", "nah", "nay"]
@@ -86,6 +86,8 @@ class LongTermMemory(object):
   def QueryAll(self, proxy, memoryLevel, where = {}, queryTexts = [""]):
     memory = self.AccessMemoryLevel(memoryLevel=memoryLevel, proxy=proxy)
     ct = memory.count()
+    if ct == 0:
+      return None
     query =memory.query(query_texts=queryTexts, n_results=ct, where=where,include=['metadatas','documents', 'distances',])
     return query
 
@@ -121,6 +123,8 @@ class LongTermMemory(object):
     
   def GetItemsByTreshold(self, proxy, memoryLevel,  threshold, queryText = "", where = {}) -> List[MemoryEntry]:
     query = self.QueryAll(proxy, memoryLevel, where, queryTexts=[queryText])
+    if(query == None):
+      return None
     ids = query["ids"][0]
     count = len(ids)
     list = []
@@ -142,7 +146,7 @@ class LongTermMemory(object):
       conversations = conversationID.split('|')
     
     entry = memory.get(themeOrEntity)
-    print(entry)
+    globalLogger.log(entry)
 
     if(len(entry["ids"][0]) == 0):
       memory.add(documents=[themeOrEntity], ids=[themeOrEntity], metadatas=[{"conversations": conversationID}])

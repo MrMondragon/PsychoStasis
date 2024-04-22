@@ -9,7 +9,7 @@
           ],
       "modelName": "CBG",
       "person":"1st",
-      "LoRa":"B:/PsychoStasis/Training/HusserlCBG.gguf",
+      "LoRa":"B:/PsychoStasis/Lora/HusserlCBG.gguf",
       "tags":["intentionality", "phenomenology", "reductionism", "essencialism", "subjectivism"],
       "inner_persona":"These are my private thoughts. Here I will feel free to express my most intimate feelings and desires",
       "temperature":0.85,

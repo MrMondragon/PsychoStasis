@@ -9,9 +9,9 @@ from CognitiveSystem import cognitiveSystem
 from AuthoritativeSystem import authoritativeSystem
 from ContextEntry import ContextEntry
 from typing import List
+from Logger import globalLogger
 
-
-proxy_path = 'Proxies/' 
+proxy_path = 'Proxies' 
 
 class Proxy:
   def __init__(self, name, **kwargs) -> None:
@@ -29,33 +29,34 @@ class Proxy:
     workPath = os.path.join(cwd, proxy_path)
     # Build the pattern for glob function
     pattern = f"{name}.proxy" if "pattern" not in kwargs else kwargs["pattern"]
+    path = os.path.join(workPath, pattern)
+    print(path)
+    if(os.path.isfile(path)):
     # Scan all '.config' files in 'models' directory
-    file_list = glob.glob(os.path.join(workPath, pattern))
-    self.params = {}
-    
-    if file_list:  # If list is not empty
-      filename = file_list[0]  # Return the first file found
-      with open(filename) as f:
-        data = json.load(f)
-        for key, value in data['params'].items():
-          if key not in kwargs:
-            kwargs[key] = value
-            self.params[key] = value
+      file_list = glob.glob(path)
+      self.params = {}
+      if file_list:  # If list is not empty
+        filename = file_list[0]  # Return the first file found
+        with open(filename) as f:
+          data = json.load(f)
+          for key, value in data['params'].items():
+            if key not in kwargs:
+              kwargs[key] = value
+              self.params[key] = value
                     
     self.primer = "" if "primer" not in kwargs else kwargs["primer"];
     self.tenets = [] if "tenets" not in kwargs else kwargs["tenets"];
     self.tags = [] if "tags" not in kwargs else kwargs["tags"];
     self.LoRa = "" if "LoRa" not in kwargs else kwargs["LoRa"];
+    print(kwargs)
     self.modelName = "" if "modelName" not in kwargs else kwargs["modelName"];
-    self.temperature = -1 if "temperature" not in kwargs else kwargs["temperature"];
+    self.temperature = 1 if "temperature" not in kwargs else kwargs["temperature"];
     
-    self.extended_core = "";
     self.cognitiveProcs = [] if "cognitiveProcs" not in kwargs else kwargs["cognitiveProcs"];
     self.tags = [] if "tags" not in kwargs else kwargs["tags"];
-    self.shards = {} if "shards" not in kwargs else kwargs["shards"];
     self.params = kwargs
     self.shouldGenerate = True
-    self.collective = None if "collective" not in kwargs else kwargs["collective"];
+    self.collective = None
     self.innerPersona =  "" if "inner_persona" not in kwargs else kwargs["inner_persona"];
     self.isCollective = False
     self.context.proxy = self
@@ -136,9 +137,6 @@ class Proxy:
     sysMessage.extend(self.tenets)
     if(self.collective != None):
       sysMessage.extend(self.collective.tenets)      
-    
-    if(self.extended_core != ""):
-      sysMessage.append(self.extended_core)
       
     sysMessage = "\n".join(sysMessage)
       
@@ -181,7 +179,7 @@ class Proxy:
     
     newContext = Context(self)
     context = self.context
-    print(f"Entering context {newContext.contextID} from context {context.contextID}")
+    globalLogger.log(f"Entering context {newContext.contextID} from context {context.contextID}")
     if(resetCortex):
       globalNexus.CortexModel.reset()      
     newContext.userName = context.userName  
@@ -215,7 +213,7 @@ class Proxy:
     
   def exitSubContext(self):
     if(self.context.parentContext):
-      print(f"exiting context {self.context.contextID} to context {self.context.parentContext.contextID}")    
+      globalLogger.log(f"exiting context {self.context.contextID} to context {self.context.parentContext.contextID}")    
       self.context = self.context.parentContext
       return self.context
   
@@ -228,7 +226,7 @@ class Proxy:
     self.context.proxy = None
     with shelve.open(str(self.memoryPath)) as memory:
       memory[self.name] = self.context 
-      print("context commited")
+      globalLogger.log("context commited")
     self.context.model = model
     self.context.proxy = self
       

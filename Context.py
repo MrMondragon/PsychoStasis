@@ -4,15 +4,17 @@ import math
 import json
 import datetime
 from Nexus import globalNexus
-from LongTermMemory import longTermMemory
+from ShortTermMemory import shortTermMemory
 from ContextEntry import ContextEntry
 from typing import List
+from Logger import globalLogger
   
 class Context(object):
   def __init__(self, proxy) -> None:
     self.parentContext = None
     self.contextID = uuid.uuid4()
     self.messageHistory : List[ContextEntry] = []
+    self.extendedSystem : List[ContextEntry] = []
     self.systemMessage = None
     self.windowSize = 3072 - 512 #typical context - typical max tokens
     self.lastMessageTxt = None    
@@ -32,8 +34,12 @@ class Context(object):
   def filteredHistory(self):
     return list(filter(lambda x: x.role != "ignore", self.messageHistory))
   
-  def getContextWindow(self):
-    totalTokens = self.lastMessageObj.tokensSize
+  def getContextWindow(self, msg):
+    
+    if(msg):
+      prompt = ContextEntry(role="user", content=msg, roleName = self.userName, context=self)
+    
+    totalTokens = prompt.tokensSize
     history = self.filteredHistory()
     
     window = []
@@ -65,6 +71,11 @@ class Context(object):
     else:
       window.extend(history)
     
+    if(prompt):
+      self.AppendMessage(msg, role="user", roleName = self.userName)
+      
+    window.append(prompt)
+    
     return window
     
   
@@ -74,17 +85,21 @@ class Context(object):
     if(self.systemMessage):
       relevantContext.append(self.systemMessage)
       
-    if(prompt):
-      self.AppendMessage(prompt, role="user", roleName = self.userName)
-    
     if(contextCallback):
       relevantContext.extend(contextCallback())
       
-    historyWindow = self.getContextWindow()
+    if(hasattr(self, "extendedSystem")):
+      if(self.extendedSystem):
+        relevantContext.extend(self.extendedSystem)
+      
+    #Get attentionContext
+    relevantContext.extend([memory.toContextEntry(self) for memory in  shortTermMemory.attentionContext.values()])
+      
+    historyWindow = self.getContextWindow(prompt)
     relevantContext.extend(historyWindow)
     
     if(self.verbose):
-      print(f"Context: {json.dumps(relevantContext, indent=2)}")
+      globalLogger.log(f"Context: {json.dumps(relevantContext, indent=2)}")
       
     if(start and end):
       relevantContext = relevantContext[start:end]
@@ -122,7 +137,7 @@ class Context(object):
       self.linkMessage(messageObj)
       self.messageHistory.append(messageObj)
       if(self.verbose):
-        print(f"Message: {self.lastMessageTxt}")
+        globalLogger.log(f"Message: {self.lastMessageTxt}")
       return messageObj
     else:
       return None
@@ -135,7 +150,7 @@ class Context(object):
     self.lastAnswerObj = msgObject
     self.lastAnswerTxt = msgObject.content
     if(self.verbose):
-      print(f"Answer: {self.lastAnswerTxt}")
+      globalLogger.log(f"Answer: {self.lastAnswerTxt}")
     return msgObject
   
 
@@ -156,7 +171,7 @@ class Context(object):
     if(len(history)> frequency):
       for message in history:
         message.CommitProcess(processName)
-      print(f"{processName} uncommited: len(history) -- frequency: {frequency}")
+      globalLogger.log(f"{processName} uncommited: len(history) -- frequency: {frequency}")
       
       return history
     else:
@@ -176,7 +191,7 @@ class Context(object):
       self.lastAnswerObj = None
     else:
       self.lastMessageTxt = None
-    print("Last message removed")
+    globalLogger.log("Last message removed")
 
   
   def SwitchUp(self, n, l):

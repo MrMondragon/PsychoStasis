@@ -16,8 +16,10 @@ from SummarizationModel import SummarizationModel
 from NERModel import NERModel
 from SentimentModel import SentimentModel
 import nvidia_smi
+from Logger import globalLogger
 
 model_path = 'models/' 
+lora_path = 'lora/' 
 
 class Nexus(object):
     def __init__(self):
@@ -51,6 +53,14 @@ class Nexus(object):
         files = os.listdir(model_path)
         model_list = [os.path.basename(f) for f in files if f.endswith('.config')]
         return model_list
+    
+    
+    @classmethod
+    def GetLoraList(cls):    
+        # get all files in directory
+        files = os.listdir(lora_path)
+        model_list = [os.path.basename(f) for f in files if f.endswith('.gguf')]
+        return model_list
 
 
     @classmethod
@@ -75,14 +85,14 @@ class Nexus(object):
 
     
     def LoadModel(self, modelName,  **kwargs):
-        print("loading model " + modelName)
+        globalLogger.log("loading model " + modelName)
         if (modelName != self.CortexModelName) and (modelName not in self.ShardModels):
             data, file_name  = Nexus.GetModelData(modelName)
             core = data["core"]
             model_class = Nexus.GetModelClass(file_name)
             # Pass kwargs directly to the constructor
             model = model_class(modelName, **kwargs)
-            print("model configured")
+            globalLogger.log("model configured")
             if core:
                 model.active = False
                 self.CortexModel = model
@@ -128,14 +138,14 @@ class Nexus(object):
 
  
     def GenerateCompletionCortex(self, localContext, callback = None, max_tokens = 0, grammar = ""):
-        print(f"performing inference with {self.CortexModelName}")
+        globalLogger.log(f"performing inference with {self.CortexModelName}")
         self.CortexModel.activate()
         self.CortexModel.params["grammar_string"] = grammar        
         return self.CortexModel.generate(localContext, callback, max_tokens=max_tokens)
 
     
     def GenerateShardCompletion(self, localContext, callback = None, max_tokens = 0, modelName:str = None, grammar = ""):
-        print(f"performing inference with {modelName}")
+        globalLogger.log(f"performing inference with {modelName}")
         self.LoadModel(modelName)
         self.ActivateModel(modelName)
         

@@ -9,7 +9,7 @@
           ],
       "modelName": "CBG",
       "person":"1st",
-      "LoRa":"B:/PsychoStasis/Training/JungCBG.gguf",
+      "LoRa":"B:/PsychoStasis/lora/JungCBG.gguf",
       "tags":["Psychoanalysis", "Archetypes", "CollectiveUnconscious", "Self-Awareness", "Introspection","ActiveImagination","Self-Knowledge"],
       "inner_persona":"These are my private thoughts. Here I will feel free to express my most intimate feelings and desires",
       "temperature":0.85,

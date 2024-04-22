@@ -125,3 +125,11 @@
   flex-direction: column;
   padding-top: 25px;
 }
+
+.scrollButton {
+  margin-bottom: 15px;
+  background-color: transparent;
+  color: #FFF;
+  border: none;
+  cursor: pointer;
+}
