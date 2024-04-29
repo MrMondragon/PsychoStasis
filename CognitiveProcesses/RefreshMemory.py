@@ -11,7 +11,7 @@ class RefreshMemory(BaseCognitiveProcess):
     self.shouldRun = True
     self.Name = "RefreshMemory"
     self.contexts = ["messageReceived"] if "contexts" not in kwargs else kwargs["contexts"]
-    self.frequency = 0 if "frequency" not in kwargs else kwargs["frequency"] #10
+    self.frequency = 5 if "frequency" not in kwargs else kwargs["frequency"] #10
     self.shouldRun = True if "shouldRun" not in kwargs else kwargs["shouldRun"]
     self.common = True
     self.priority = 100

@@ -27,6 +27,8 @@ class Nexus(object):
         self.CortexModelName: str = None
         self.ShardModels: dict[str, BaseModel] = {}
         self.ShardBatch: dict[str,bool] = {}
+        self.ActiveProxy = None
+        self.ActiveCollective = None
         self.LoadModel("Embeddings.Embeddings")
         self.LoadModel("Summarizer.Summarizer")
         self.LoadModel("NER.NER")
@@ -253,6 +255,14 @@ class Nexus(object):
     def CalcTokenSize(self, text):
         encodedText = self.CortexModel.encode(text)
         return len(encodedText), encodedText
+    
+    
+    def BroadCastMessage(self, message, role="user"):
+        if(self.ActiveCollective is not None):
+            return self.ActiveCollective.ReceiveMessage(message, role)
+        else:
+            return self.ActiveProxy.ReceiveMessage(message, role)
+        
         
     
 globalNexus = Nexus()

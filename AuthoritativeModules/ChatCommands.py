@@ -17,6 +17,7 @@ class ChatCommands(object):
     authoritativeSystem.Commands[r"/V\d+(V\d+)?"] = _Command(func = self.SwitchDown, description = "switch down context")
     authoritativeSystem.Commands[r"/new"] = _Command(func = self.newContext, description = "start a new context")
   
+  
   def removeLast(self, prompt, command, proxy):
     globalLogger.log(logLevel=LogLevel.authoritativeLog, message=f"removing last message: {prompt}")
     if(prompt.startswith("<<<<")):
@@ -30,11 +31,15 @@ class ChatCommands(object):
     proxy.shouldGenerate = False
     return ""
   
+  
   def regen(self, prompt, command, proxy):
+    content = proxy.context.lastMessageObj.content
+    role = proxy.context.lastMessageObj.role
+    roleName = proxy.context.lastMessageObj.roleName
     proxy.context.RemoveLast()
     proxy.context.RemoveLast() 
     msg = proxy.context.lastMessageObj
-    proxy.ReceiveMessage(message = msg.content, role = msg.role, roleName = msg.roleName)
+    proxy.ReceiveMessage(message = content, role = role, roleName = roleName)
     return ""
     
     
@@ -56,6 +61,7 @@ class ChatCommands(object):
       prompt = atProxy + " " + prompt
     return prompt
   
+  
   def SwitchUp(self, prompt, command, proxy):
     nl = re.findall(r"\d+", command)
     n = int(nl[0])
@@ -65,6 +71,7 @@ class ChatCommands(object):
       l = 1
     proxy.context.SwitchUp(n, l)
     return ""
+  
   
   def SwitchDown(self, prompt, command, proxy):
     nl = re.findall(r"\d+", command)
@@ -78,5 +85,4 @@ class ChatCommands(object):
   
   def newContext(self, prompt, command, proxy):
     proxy.clearContext()
-    
     

@@ -17,21 +17,25 @@ class Collective(Proxy):
     if(proxies):
       for proxy in proxies:
         globalLogger.log(logLevel=LogLevel.globalLog, message=f"Loading proxy: {proxy}")
+        
         self.proxies[proxy] = Proxy(proxy, collective=self)
         self.proxies[proxy].collective = self;
         self.proxies[proxy].context = self.context;
-        if(self.activeSpeaker == None):
-          globalLogger.log(logLevel=LogLevel.globalLog, message=f"Active Speaker: {proxy}")
-          self.activeSpeaker = self.proxies[proxy]
+    
+    proxy = proxies[0] 
+    self.activeSpeaker = self.proxies[proxy]
+    globalNexus.ActiveProxy = self.proxies[proxy]
+    globalLogger.log(logLevel=LogLevel.globalLog, message=f"Active Speaker: {proxy}")
         
     self.lastSpeaker = None
     self.isCollective = True
     self.sysMessage = self.GenerateSystem()
+    globalNexus.ActiveCollective = self
     
     
       
   @classmethod
-  def get_collective_list(cls):    
+  def GetCollectiveList(cls):    
     # get all files in directory
     files = os.listdir(proxy_path)
     collective_list = [os.path.basename(f) for f in files if f.endswith('.collective')]

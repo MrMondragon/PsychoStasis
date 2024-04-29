@@ -1,9 +1,9 @@
 import datetime
 import uuid
 
+
 class ContextEntry(object):
   def __init__(self, role, content, roleName, context, id=""):
-    context.ActivateModel()
     self.role = role
     self.content = content
     self.tokens = None

@@ -61,7 +61,22 @@ class Proxy:
     self.innerPersona =  "" if "inner_persona" not in kwargs else kwargs["inner_persona"];
     self.isCollective = False
     self.context.proxy = self
+    globalNexus.ActiveProxy = self
 
+  def SaveConfigs(self):
+    cfg = {}
+    cfg["params"] = {}
+    cfg["params"]["primer"] = self.primer
+    cfg["params"]["tenets"] = self.tenets
+    cfg["params"]["tags"] = self.tags
+    cfg["params"]["LoRa"] = self.LoRa
+    cfg["params"]["cognitiveProcs"] = self.cognitiveProcs
+    cfg["params"]["inner_persona"] = self.innerPersona
+    cfg["params"]["temperature"] = self.temperature
+    cfg["params"]["modelName"] = self.modelName
+    with open(f"{proxy_path}\\{self.name}.proxy", 'w') as f:
+      json.dump(cfg, f)
+    
 
   @classmethod
   def GetProxyList(cls):    
@@ -73,6 +88,7 @@ class Proxy:
   
 
   def LoadLora(self):
+    globalLogger.log(message=f"Self Model = {self.modelName}, Cortex Model: {globalNexus.CortexModelName}", logLevel=LogLevel.globalLog)
     if(globalNexus.CortexModel.params['LoRa']!= self.LoRa):
       globalNexus.DeactivateModel(self.modelName)
       globalNexus.CortexModel.params['LoRa'] = self.LoRa
@@ -81,24 +97,22 @@ class Proxy:
   def GenerateAnswer(self, prompt, shard=None, contextCallback = None, grammar = "",
                      max_tokens = 512):
       try:
-        if(globalNexus.CortexModelName != self.modelName):
-          globalNexus.LoadModel(self.modelName)
 
         if(shard):
           globalNexus.LoadModel(shard)        
           self.context.model = globalNexus.ShardModels[shard]
         else:
-          self.context.model = globalNexus.CortexModel
-          
-        self.context.model.activate()
+          globalNexus.LoadModel(self.modelName)
+          if(shard==None):
+            self.LoadLora();         
+            self.context.model = globalNexus.CortexModel
+        
+        globalNexus.ActivateModel(self.modelName)
         
         self.context.SetSystemMessage(self.GenerateSystem())
 
         if(self.temperature != -1):
           globalNexus.CortexModel.params["temperature"] = self.temperature
-          
-        if(shard==None):
-          self.LoadLora();   
         
         self.context.proxy = self
         

@@ -122,13 +122,7 @@ class Context(object):
   def SetSystemMessage(self, message):
     self.systemMessage = ContextEntry(role="system", content=message, roleName="system", context=self)
   
-  def ActivateModel(self):
-    if(globalNexus.CortexModelName != self.proxy.modelName):
-      globalNexus.LoadModel(self.proxy.modelName)    
-    if self.model is None:
-      self.model = globalNexus.CortexModel
-    self.model.activate()
-      
+        
   def AppendMessage(self, message, role, roleName):
     if(message):
       messageObj = ContextEntry(role=role, content=message, roleName=roleName, context=self)
@@ -158,7 +152,6 @@ class Context(object):
     if(len(self.messageHistory) > 0):
       self.messageHistory[-1].next = message
       message.previous = self.messageHistory[-1]
-
 
   def GetUncommitedMessages(self, processName, frequency):
     history = self.filteredHistory()

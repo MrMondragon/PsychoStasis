@@ -10,6 +10,8 @@ class CognitiveSystem(DynamicSystem):
     self.commonProcesses = list(map(lambda proc: proc.Name, commonProcesses))
     self.stack = deque()
     self.params = {}
+    self.lastExecutedProcess = None
+
 
   def RunProcess(self, proxy, procName):
     if(procName in self.processes):
@@ -47,6 +49,7 @@ class CognitiveSystem(DynamicSystem):
             processToRun = processes[0]
             processToRun.frequency+= 100
             processToRun.Run(proxy)
+            self.lastExecutedProcess = processToRun
           except Exception as e:
             globalLogger.log(message = f"Error running process {process.Name} in context {context} for proxy {proxy}: {e}", logLevel=LogLevel.errorLog)
             globalLogger.log(message = traceback.format_exc(), logLevel=LogLevel.errorLog)
@@ -57,5 +60,7 @@ class CognitiveSystem(DynamicSystem):
   def getProcessPath(self):
     return "CognitiveProcesses"
 
+
+ 
 
 cognitiveSystem = CognitiveSystem()  

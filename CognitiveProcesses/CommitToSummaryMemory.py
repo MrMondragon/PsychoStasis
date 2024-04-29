@@ -13,7 +13,7 @@ class CommitToSummaryMemory(BaseCognitiveProcess):
     super().__init__(**kwargs)
     self.Name = "CommitToSummaryMemory"
     self.contexts = ["afterMessageReceived"] if "contexts" not in kwargs else kwargs["contexts"]
-    self.frequency = 0 if "frequency" not in kwargs else kwargs["frequency"] #50
+    self.frequency = 25 if "frequency" not in kwargs else kwargs["frequency"] #50
     self.shouldRun = True if "shouldRun" not in kwargs else kwargs["shouldRun"]
     self.common = True
     self.priority = 110

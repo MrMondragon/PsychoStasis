@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import RoPE
 from callbacks import Iteratorize
+import random
 from Logger import globalLogger, LogLevel
 
 
@@ -27,13 +28,14 @@ from BaseModel import BaseModel
 
 lora_path="LoRa/"
     
-def ban_eos_logits_processor(eos_token, logits):
+def ban_eos_logits_processor(eos_token, anyPar, logits):
     logits[eos_token] = -float('inf')
     return logits
 
 
-def custom_token_ban_logits_processor(token_ids, logits):
+def custom_token_ban_logits_processor(token_ids, anyPar, logits):
     for token_id in token_ids:
+        print(logits[token_id])
         logits[token_id] = -float('inf')
 
     return logits    
@@ -162,7 +164,7 @@ class GGUFModel(BaseModel):
             logit_processors.append(partial(ban_eos_logits_processor, self.model.token_eos()))
 
         if self.params['custom_token_bans']:
-            to_ban = [int(x) for x in self.params['custom_token_bans'].split(',')]
+            to_ban = [self.encode(x) for x in self.params['custom_token_bans'].split(',')]
             if len(to_ban) > 0:
                 logit_processors.append(partial(custom_token_ban_logits_processor, to_ban))
 
@@ -179,7 +181,7 @@ class GGUFModel(BaseModel):
             repeat_penalty=self.params['repetition_penalty'],
             top_k=self.params['top_k'],
             #stream=self.streaming,
-            seed=int(self.params['seed']) if self.params['seed'] != -1 else None,
+            seed=int(self.params['seed']) if self.params['seed'] != -1 else random.randint(0, 4294967295),
             tfs_z=self.params['tfs'],
             mirostat_mode=int(self.params['mirostat_mode']),
             mirostat_tau=self.params['mirostat_tau'],

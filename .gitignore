@@ -1,4 +1,10 @@
-/models/
+/models/all-mpnet-base-v2/
+/models/bart-large-cnn/
+/models/bert-base-NER/
+/models/distilbert-base-uncased-finetuned-sentiment-amazon/
+/models/multi-qa-distilbert-cos-v1/
+/models/roberta-base-go_emotions/
+/models/text_summarization/
 /Memory/
 /Dox/
 /CSClients/

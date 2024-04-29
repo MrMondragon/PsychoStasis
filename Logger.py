@@ -8,6 +8,8 @@ class LogLevel(Enum):
   thoughtLog = 2
   authoritativeLog = 3
   cognitiveLog = 4
+  uiLog = 5
+  warningLog = 6
   
 class LogEntry():
   def __init__(self, message, logLevel: LogLevel):
@@ -22,7 +24,9 @@ class Logger(object):
   def log(self, message, logLevel: LogLevel):
     entry = LogEntry(message, logLevel)
     self.logEntries.append(entry)
-    print(f"[{entry.logTime}] {entry.logLevel.name}: {entry.message}")
+    msg = f"[{entry.logTime}] {entry.logLevel.name}: {entry.message}"
+    print(msg)
+    return entry
     
   def GenerateHTML(self):
     if(self.logEntries == []):
