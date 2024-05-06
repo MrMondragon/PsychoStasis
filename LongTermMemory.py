@@ -16,7 +16,7 @@ negativeStr = " ".join(negative)
 class LongTermMemory(object):
   def __init__(self):
     self.path = './Memory/'
-    self.persistent = False
+    self.persistent = True
     self.client = PersistentClient(self.path) if(self.persistent) else Client()
   
     ###############################################################

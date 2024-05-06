@@ -11,6 +11,7 @@ from ContextEntry import ContextEntry
 from typing import List
 from Logger import globalLogger, LogLevel
 import traceback
+from MemoryTypes import MemoryLevel
 
 proxy_path = 'Proxies' 
 
@@ -52,7 +53,7 @@ class Proxy:
     globalLogger.log(message=kwargs, logLevel=LogLevel.globalLog)
     self.modelName = "" if "modelName" not in kwargs else kwargs["modelName"];
     self.temperature = 1 if "temperature" not in kwargs else kwargs["temperature"];
-    
+    self.memoryLevel = MemoryLevel.Abstract if "memoryLevel" not in kwargs else MemoryLevel[kwargs["memoryLevel"]];
     self.cognitiveProcs = [] if "cognitiveProcs" not in kwargs else kwargs["cognitiveProcs"];
     self.tags = [] if "tags" not in kwargs else kwargs["tags"];
     self.params = kwargs
@@ -88,7 +89,7 @@ class Proxy:
   
 
   def LoadLora(self):
-    globalLogger.log(message=f"Self Model = {self.modelName}, Cortex Model: {globalNexus.CortexModelName}", logLevel=LogLevel.globalLog)
+    globalLogger.log(message=f"Self Model = {self.modelName}, Cortex Model: {globalNexus.CortexModelName}, Lora: {self.LoRa}", logLevel=LogLevel.globalLog)
     if(globalNexus.CortexModel.params['LoRa']!= self.LoRa):
       globalNexus.DeactivateModel(self.modelName)
       globalNexus.CortexModel.params['LoRa'] = self.LoRa
@@ -178,7 +179,10 @@ class Proxy:
     message = authoritativeSystem.Run(proxy=self, prompt=message, role=role)
     self.shouldGenerate = bool(message)
     if(self.shouldGenerate):#allows for interruption after authoritativeMessage
+      cognitiveSystem.params["lastMessage"] = message
       cognitiveSystem.RunProcesses(proxy=self, context="messageReceived")  
+      message = cognitiveSystem.params["lastMessage"]
+      cognitiveSystem.params["lastMessage"] = ""
     if(self.shouldGenerate):#allows for interruption after messageReceived
       answer = self.GenerateAnswer(prompt=message)
       cognitiveSystem.RunProcesses(proxy=self, context="afterMessageReceived")
@@ -193,7 +197,6 @@ class Proxy:
   def enterSubContext(self, deepCopy=False, copySystem=False, 
                       copylastMessageTxt=False,
                       copylastAnswerObj=False,
-                      copyContextualInfo =False, 
                       innerThoughts=False, resetCortex=False, interactions: List[ContextEntry]=None):
     
     newContext = Context(self)
@@ -222,9 +225,6 @@ class Proxy:
     if(copySystem):
       newContext.SetSystemMessage(self.GenerateSystem(innerThoughts=innerThoughts))
       
-    if(copyContextualInfo):
-      newContext.contextual_info = copy.deepcopy(context.contextual_info)   
-    
     self.context = newContext
     
     return newContext
@@ -238,21 +238,27 @@ class Proxy:
   
   
   def commitContext(self):
-    self.context.parentContext = None
-    self.context.messageHistory = self.context.filteredHistory()
-    model = self.context.model
-    self.context.model = None
-    self.context.proxy = None
-    with shelve.open(str(self.memoryPath)) as memory:
-      memory[self.name] = self.context 
-      globalLogger.log(logLevel=LogLevel.globalLog, message="context commited")
-    self.context.model = model
-    self.context.proxy = self
+    if(self.collective != None):
+      self.collective.commitContext()
+    else:
+      self.context.parentContext = None
+      self.context.messageHistory = self.context.filteredHistory()
+      model = self.context.model
+      self.context.model = None
+      self.context.proxy = None
+      with shelve.open(str(self.memoryPath)) as memory:
+        memory[self.name] = self.context 
+        globalLogger.log(logLevel=LogLevel.globalLog, message="context commited")
+      self.context.model = model
+      self.context.proxy = self
       
       
   def clearContext(self):
-    self.context = Context(self)
-    self.commitContext()
+    if(self.collective != None):
+      self.collective.clearContext()
+    else:
+      self.context = Context(self)
+      self.commitContext()
     
   def TabulaRasa(self):
     self.context.TabulaRasa()

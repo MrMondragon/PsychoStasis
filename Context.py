@@ -36,8 +36,12 @@ class Context(object):
   
   def getContextWindow(self, msg):
     
+    roleName = self.senderRole
+    if(not roleName):
+      roleName = self.userName
+    
     if(msg):
-      prompt = ContextEntry(role="user", content=msg, roleName = self.userName, context=self)
+      prompt = ContextEntry(role=roleName, content=msg, roleName = self.userName, context=self)
     
     totalTokens = prompt.tokensSize
     history = self.filteredHistory()
@@ -72,7 +76,7 @@ class Context(object):
       window.extend(history)
     
     if(prompt):
-      self.AppendMessage(msg, role="user", roleName = self.userName)
+      self.AppendMessage(msg, role=roleName, roleName = roleName)
       
     window.append(prompt)
     

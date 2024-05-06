@@ -15,7 +15,8 @@ class ShortTermMemory(object):
     self.attentionContext : Dict[str, MemoryEntry] = {}
 
 
-  def ElicitMemory(self, text, proxy):
+  def ElicitMemory(self, text, proxy, memoryLevel):
+        
     globalNexus.BeginShardBatch("Embeddings.Embeddings")
 
     themes = longTermMemory.GetItemsByTreshold(proxy=proxy, memoryLevel=MemoryLevel.Thematic, threshold=1.4, queryText=text, where={"proxy":  { "$eq": proxy.name }})
@@ -38,38 +39,42 @@ class ShortTermMemory(object):
     for fact in facts:
       fact.priority = basePriority
 
-    sumIds = [fact.metadata["summaryIds"] for fact in facts]
-    sumIds = "|".join(sumIds)
-    sumIds = sumIds.split("|")
-    sumIds = list(set(sumIds))
+    summaries = []
+    episodes = []
+    if(memoryLevel >= MemoryLevel.Summary):
+      sumIds = [fact.metadata["summaryIds"] for fact in facts]
+      sumIds = "|".join(sumIds)
+      sumIds = sumIds.split("|")
+      sumIds = list(set(sumIds))
 
-    summaries = longTermMemory.GetItemsByTreshold(proxy=proxy, memoryLevel=MemoryLevel.Summary, threshold=0, queryText=text,
-      where={
-        "$and": [
-            {"proxy": {"$eq": proxy.name}},
-            {"id": {"$in": sumIds}}
-        ]
-    })
+      summaries = longTermMemory.GetItemsByTreshold(proxy=proxy, memoryLevel=MemoryLevel.Summary, threshold=0, queryText=text,
+        where={
+          "$and": [
+              {"proxy": {"$eq": proxy.name}},
+              {"id": {"$in": sumIds}}
+          ]
+      })
 
-    for sum in summaries:
-      sum.priority = basePriority + 10
+      for sum in summaries:
+        sum.priority = basePriority + 10
 
-    epIds = [sum.metadata["episodes"] for sum in summaries]
-    epIds = "|".join(epIds)
-    epIds = epIds.split("|")
-    epIds = list(set(epIds))
+      if(memoryLevel >= MemoryLevel.Episodic):
+        epIds = [sum.metadata["episodes"] for sum in summaries]
+        epIds = "|".join(epIds)
+        epIds = epIds.split("|")
+        epIds = list(set(epIds))
 
-    episodes = longTermMemory.GetItemsByTreshold(proxy=proxy, memoryLevel=MemoryLevel.Episodic, threshold=0, queryText=text,
-      where={
-        "$and": [
-            {"proxy": {"$eq": proxy.name}},
-            {"id": {"$in": epIds}}
-        ]
-      }
-    )
+        episodes = longTermMemory.GetItemsByTreshold(proxy=proxy, memoryLevel=MemoryLevel.Episodic, threshold=0, queryText=text,
+          where={
+            "$and": [
+                {"proxy": {"$eq": proxy.name}},
+                {"id": {"$in": epIds}}
+            ]
+          }
+        )
 
-    for ep in episodes:
-      ep.priority = basePriority + 20
+        for ep in episodes:
+          ep.priority = basePriority + 20
 
     memoryContext = []
     memoryContext.extend(itertools.chain(facts, summaries, episodes))
@@ -126,6 +131,12 @@ class ShortTermMemory(object):
           break
         
     self.attentionContext = result
+    
+  def GenerateHTML(self):
+    html = ""
+    for item in self.attentionContext.values():
+      html+= f"<p>{item.content}</p>"
+      
   
   
 ###############################################################

@@ -41,8 +41,10 @@ class DynamicSystem(object):
         module = importlib.import_module(processPath+"."+procName)        
         cls = getattr(module, procName)
         cfg = fileName.replace(".py", ".config")
+        kwargs = {}
         if(os.path.isfile(cfg)):
           kwargs = json.load(open(cfg))
+        kwargs["system"]=self
         procObject = cls(**kwargs)
         self.processes[procName] = procObject
           

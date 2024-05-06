@@ -12,6 +12,10 @@ class ContextEntry(object):
     if(role != "ignore"):
       context.calcTokenCount(self)
       
+      
+    if(role == "user"):
+      roleName = context.userName
+      
     self.roleName = roleName
     self.created = str(datetime.datetime.now())
     

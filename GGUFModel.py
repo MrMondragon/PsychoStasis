@@ -35,7 +35,6 @@ def ban_eos_logits_processor(eos_token, anyPar, logits):
 
 def custom_token_ban_logits_processor(token_ids, anyPar, logits):
     for token_id in token_ids:
-        print(logits[token_id])
         logits[token_id] = -float('inf')
 
     return logits    
@@ -163,10 +162,10 @@ class GGUFModel(BaseModel):
         if self.params['ban_eos_token']:
             logit_processors.append(partial(ban_eos_logits_processor, self.model.token_eos()))
 
-        if self.params['custom_token_bans']:
-            to_ban = [self.encode(x) for x in self.params['custom_token_bans'].split(',')]
-            if len(to_ban) > 0:
-                logit_processors.append(partial(custom_token_ban_logits_processor, to_ban))
+#        if self.params['custom_token_bans']:
+#            to_ban = [self.encode(x) for x in self.params['custom_token_bans'].split(',')]
+#            if len(to_ban) > 0:
+#                logit_processors.append(partial(custom_token_ban_logits_processor, to_ban))
 
        
         completion_chunks = self.model.create_chat_completion(
@@ -192,8 +191,13 @@ class GGUFModel(BaseModel):
         )
 
         output = completion_chunks
+        msg = output['choices'][0]['message']['content']
         
+        for token in self.params["eos_tokens"]:
+            if(token in msg):
+                msg = msg[0:msg.index(token)]
         
+        output['choices'][0]['message']['content'] = msg
         
         #if(self.streaming):
         #    text = ""

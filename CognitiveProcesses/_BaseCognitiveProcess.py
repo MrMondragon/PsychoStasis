@@ -19,6 +19,7 @@ class BaseCognitiveProcess(object):
     self.proxy= None
     self.priorty = 100 if "priority" not in kwargs else kwargs["priority"]
     self.localContext = None
+    self.system = kwargs["system"]
   
   def Run(self, proxy):
     self.proxy = proxy

@@ -1,4 +1,5 @@
 import sys
+from MemoryTypes import MemoryLevel
 from pathlib import Path
 sys.path.insert(0, str(Path("..")))
 sys.path.insert(0, str(Path(".")))
@@ -19,7 +20,7 @@ class RefreshMemory(BaseCognitiveProcess):
   def _internalRun(self):
     super()._internalRun()
     text = self.proxy.context.lastMessageTxt
-    ctx = shortTermMemory.ElicitMemory(text, self.proxy)
+    ctx = shortTermMemory.ElicitMemory(text, self.proxy, memoryLevel=MemoryLevel.Abstract)
     if(ctx is None):
       return
     shortTermMemory.PrioritizeMemory(text)

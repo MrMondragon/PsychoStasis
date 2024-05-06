@@ -21,6 +21,8 @@ class Collective(Proxy):
         self.proxies[proxy] = Proxy(proxy, collective=self)
         self.proxies[proxy].collective = self;
         self.proxies[proxy].context = self.context;
+
+        
     
     proxy = proxies[0] 
     self.activeSpeaker = self.proxies[proxy]
@@ -31,6 +33,8 @@ class Collective(Proxy):
     self.isCollective = True
     self.sysMessage = self.GenerateSystem()
     globalNexus.ActiveCollective = self
+  
+    
     
     
       
@@ -62,17 +66,21 @@ class Collective(Proxy):
     for name, proxy in self.proxies.items():
       self.SwitchToSpeaker(name)
       proxy.ReceiveMessage(message=prompt)
-  
+      answer = proxy.ReceiveMessage(message=prompt)
+      globalLogger.log(logLevel=LogLevel.globalLog, message=f"{self.activeSpeaker.name}: {answer}")  
+      
+      
   def Others(self, prompt):
     for name, proxy in self.proxies.items():
       if(proxy != self.activeSpeaker):
         self.SwitchToSpeaker(name)
-        proxy.ReceiveMessage(message=prompt)
+        answer = proxy.ReceiveMessage(message=prompt)
+        globalLogger.log(logLevel=LogLevel.globalLog, message=f"{self.activeSpeaker.name}: {answer}")
         
-  def ReceiveMessage(self, message, role="user"):
-
+  
+  def ReceiveMessage(self, message, role="user", roleName = ""):
     sysMessage = self.sysMessage
-    
+
     if("{proxy_name}" in sysMessage):
         sysMessage = sysMessage.replace("{proxy_name}", self.activeSpeaker.name)   
     if("{collective_members|proxy_name}" in sysMessage):
@@ -81,17 +89,49 @@ class Collective(Proxy):
       sysMessage = sysMessage.replace("{collective_members|proxy_name}", ", ".join(proxyList))
         
     self.context.systemMessage = sysMessage    
-    
+    answer = None
     self.shouldGenerate = True    
     message = authoritativeSystem.Run(proxy=self, prompt=message, role=role)
     self.shouldGenerate = bool(message)
     if(self.shouldGenerate):#allows for interruption after authoritativeMessage
       cognitiveSystem.RunProcesses(proxy=self, context="collectiveMessageReceived")
     if(self.shouldGenerate):#allows for interruption after collectiveMessageReceived
-      answer = self.activeSpeaker.ReceiveMessage(message=message, role=role)
+      answer = self.activeSpeaker.ReceiveMessage(message=message, role=role, roleName = roleName)
       cognitiveSystem.RunProcesses(proxy=self, context="afterCollectiveMessageReceived")
     self.context.messageSender = None
     self.context.senderRole = None
-    return answer
     
+    if(not answer):
+      answer = self.context.lastAnswerObj
+      
+    return answer
 
+  def setProxyContexts(self):
+    for proxy in self.proxies.values():
+      proxy.context = self.context
+
+    
+  def clearContext(self):
+    super().clearContext()
+    self.setProxyContexts()
+      
+  def enterSubContext(self, deepCopy=False, copySystem=False, 
+                      copylastMessageTxt=False,
+                      copylastAnswerObj=False,
+                      copyContextualInfo =False, 
+                      innerThoughts=False, resetCortex=False, interactions =None):
+    super().enterSubContext(deepCopy=deepCopy, copySystem=copySystem,
+                            copylastMessageTxt=copylastMessageTxt,
+                            copylastAnswerObj=copylastAnswerObj,
+                            copyContextualInfo =copyContextualInfo,
+                            innerThoughts=innerThoughts, resetCortex=resetCortex, interactions=interactions)
+    self.setProxyContexts()
+      
+  def exitSubContext(self):
+    super().exitSubContext()
+    self.setProxyContexts()
+    
+  def invite(self, proxyName):
+    newProxy = Proxy(proxyName, collective=self)
+    self.proxies[proxyName] = newProxy
+    newProxy.context = self.context

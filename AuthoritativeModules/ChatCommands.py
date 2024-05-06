@@ -7,7 +7,7 @@ from Logger import globalLogger, LogLevel
 
 class ChatCommands(object):
   def __init__(self, **kwargs):
-    super().__init__(**kwargs)
+    pass
   
   def RegisterCommands(self, authoritativeSystem):
     authoritativeSystem.Commands["<<"] = _Command(func = self.removeLast, description = "remove last context message")
@@ -16,8 +16,27 @@ class ChatCommands(object):
     authoritativeSystem.Commands[r"/A\d+(A\d+)?"] = _Command(func = self.SwitchUp, description = "switch up context")
     authoritativeSystem.Commands[r"/V\d+(V\d+)?"] = _Command(func = self.SwitchDown, description = "switch down context")
     authoritativeSystem.Commands[r"/new"] = _Command(func = self.newContext, description = "start a new context")
+    authoritativeSystem.Commands[r"/sysMsg"] = _Command(func = self.sysMessage, description = "send message as the system")
+    authoritativeSystem.Commands[r"/invite"] = _Command(func = self.invite, description = "invite a proxy to a collective")
+
   
+  def invite(self, prompt, command, proxy):
+    prompt = prompt.replace(command, "")
+    prompt = prompt.strip()    
+    proxy.invite(prompt)
+    
+    globalLogger.log(logLevel=LogLevel.authoritativeLog, message=f"{prompt} invited to the collective")
+    
+    return ""
   
+  def sysMessage(self, prompt, command, proxy):
+    prompt = prompt.replace(command, "")
+    prompt = prompt.strip()
+    proxy.context.senderRole = "system"
+    proxy.ReceiveMessage(message = prompt, role = "system", roleName = "system")
+    globalLogger.log(logLevel=LogLevel.authoritativeLog, message=f"message sent as 'system'")
+    return ""
+    
   def removeLast(self, prompt, command, proxy):
     globalLogger.log(logLevel=LogLevel.authoritativeLog, message=f"removing last message: {prompt}")
     if(prompt.startswith("<<<<")):
@@ -51,10 +70,10 @@ class ChatCommands(object):
     if(atProxy.lower() == "any"):
       proxy.SwitchToAny(prompt)
     elif(atProxy.lower() == "all"):
-      proxy.All()
+      proxy.All(prompt)
       return ""
     elif(atProxy.lower() == "others"):
-      proxy.Others()
+      proxy.Others(prompt)
       return ""
     else:
       proxy.SwitchToSpeaker(atProxy)
@@ -85,4 +104,6 @@ class ChatCommands(object):
   
   def newContext(self, prompt, command, proxy):
     proxy.clearContext()
+    globalLogger.log(logLevel=LogLevel.authoritativeLog, message="New conversation started")
+    
     

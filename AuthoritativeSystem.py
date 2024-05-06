@@ -13,6 +13,7 @@ class AuthoritativeSystem(DynamicSystem):
     
   def Run(self, proxy, prompt, role):
     command = ""
+    globalLogger.log(message = f"Prompt: {prompt}", logLevel = LogLevel.authoritativeLog)
     try:
       if(re.match(r"\W", prompt)): #check if prompt is a command. Commands must ALWAYS start with \W, non word char
         if(prompt == "/help"):
@@ -23,6 +24,8 @@ class AuthoritativeSystem(DynamicSystem):
         
         expressions = self.Commands.keys()
         for expression in expressions:
+          if(not prompt):
+            break
           command = re.match(expression, prompt)
           if(command):
             prompt = self.Commands[expression].func(proxy=proxy,prompt=prompt, command = command.group())

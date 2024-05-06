@@ -16,7 +16,7 @@ class CommitToThematicMemory(BaseCognitiveProcess):
     self.shouldRun = True
     self.Name = "CommitToThematicMemory"
     self.contexts = ["afterMessageReceived"] if "contexts" not in kwargs else kwargs["contexts"]
-    self.frequency = 50 if "frequency" not in kwargs else kwargs["frequency"] #50
+    self.frequency = 20 if "frequency" not in kwargs else kwargs["frequency"] #50
     self.shouldRun = True if "shouldRun" not in kwargs else kwargs["shouldRun"]
     self.common = True
     self.priority = 150 # so that it runs after episodic and consolidated AND abstract

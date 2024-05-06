@@ -178,3 +178,20 @@
   color: rgb(255, 60, 60);
   font-weight: bold;
 }
+
+.centered-div {
+  width: 256px; /* Set the width of the div */
+  height: 256px; /* Set the height of the div */
+  overflow: hidden; /* Hide any content that exceeds the div's size */
+  margin: 0 auto; /* Center the div horizontally */
+  display: flex; /* Use flexbox for centering */
+  justify-content: center; /* Center the content horizontally */
+  align-items: center; /* Center the content vertically */
+  border: 1px solid #ccc; /* Add a border for visibility */
+}
+
+.centered-div img {
+  max-width: 100%; /* Ensure the image fits within the div's width */
+  max-height: 100%; /* Ensure the image fits within the div's height */
+  object-fit: contain; /* Maintain the image's aspect ratio while fitting it within the div */
+}

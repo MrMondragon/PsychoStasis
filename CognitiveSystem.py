@@ -15,21 +15,20 @@ class CognitiveSystem(DynamicSystem):
 
   def RunProcess(self, proxy, procName):
     if(procName in self.processes):
+      oldFrequency = proc.frequency
+      proc.frequency = 0
       proc = self.processes[procName]
+      proc.frequency = oldFrequency
       return proc.Run(proxy)
     
 
   def RunProcesses(self, proxy, context):
     try:
       globalLogger.log(logLevel=LogLevel.cognitiveLog, message=f"Running processes in context {context}")
-      self.params = {}
       
       processes = self.processes.values()
-      globalLogger.log(logLevel=LogLevel.cognitiveLog, message=f"All procs: {'|'.join(proc.Name for proc in processes)}")
       processes = list(filter(lambda proc: (context in proc.contexts), processes))
-      globalLogger.log(logLevel=LogLevel.cognitiveLog, message=f"Context filtered procs: {'|'.join(proc.Name for proc in processes)}")
       processes = list(filter(lambda proc: ((proc.Name in proxy.cognitiveProcs) or (proc.Name in self.commonProcesses)), processes))
-      globalLogger.log(logLevel=LogLevel.cognitiveLog, message=f"Proxy and common filtered procs: {'|'.join(proc.Name for proc in processes)}")
       
       if(proxy.collective != None):
         processes = list(filter(lambda proc: ((proc.Name not in proxy.collective.cognitiveProcs) and

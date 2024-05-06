@@ -5,6 +5,7 @@ import markdown
 import html
 from collections import deque
 from ContextEntry import ContextEntry
+from ShortTermMemory import shortTermMemory
 from Nexus import globalNexus
 from Logger import globalLogger, LogLevel
 
@@ -102,6 +103,19 @@ def convert_to_markdown(string):
     html_output = pattern.sub(lambda x: html.unescape(x.group()), html_output)
 
     return html_output    
+  
+def generateAvatarHTML(roleName: str):
+  imagePath= os.path.join(workPath, "assets", f"{roleName}.png")
+  if(not os.path.isfile(imagePath)):
+    imagePath= os.path.join(workPath, "assets", f"ignore.png")
+  
+  html = f"""
+  <div class='centered-div'>
+    <img src='file/{imagePath}' alt='{roleName}'>
+  </div>
+  """
+  return html
+  
 
 def generateMessageHTML(message: ContextEntry):
   role = message.role
@@ -109,6 +123,8 @@ def generateMessageHTML(message: ContextEntry):
   roleName = message.roleName
   
   imagePath= os.path.join(workPath, "assets", f"{roleName}.png")
+  if(not os.path.isfile(imagePath)):
+    imagePath= os.path.join(workPath, "assets", "ignore.png")    
   imagePath = glob.glob(imagePath)
   if(os.path.isfile(imagePath[0])):
     imagePath = f"<img src='file/{imagePath[0]}' alt='{roleName}'>"
@@ -180,4 +196,4 @@ def sendMessage(message):
     proxies = ""
     
   
-  return "", html, globalLogger.GenerateHTML(), globalNexus.ActiveProxy.name, proxies
+  return "", html, globalLogger.GenerateHTML(), globalNexus.ActiveProxy.name, proxies, generateAvatarHTML(globalNexus.ActiveProxy.name), shortTermMemory.GenerateHTML()
